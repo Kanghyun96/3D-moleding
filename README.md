@@ -1,38 +1,52 @@
-# TrackVision AI — 3D Modeling & Interactive Simulation Assets
+# TrackVision · Field Motion
 
-본 레포지토리는 **TrackVision AI**의 차세대 인터랙티브 홈 화면(디지털 트윈 관제 대시보드)에 적용될 **3D 시뮬레이션 지형 맵 및 건설 시험 장비 3D 미니어처/모션 에셋**을 독립적으로 연구·제작하는 저장소입니다.
+필드 시험장 사진 위에서 Bobcat T-870 장비가 주행하는 인터랙티브 Home 화면입니다.
+사진 배경과 실시간 3D 장비·궤도·그림자를 결합합니다.
 
-향후 완성된 3D 엔진 및 에셋 모듈은 메인 프로젝트인 [TrackVision_AI](https://github.com/Kanghyun96/TrackVision_AI)로 이식되어 결합됩니다.
+## 실행
 
----
+저장소 루트에서 정적 HTTP 서버를 실행합니다.
 
-## 📁 주요 구성 파일
-
-```text
-3D-moleding/
-├── index.html                   # 웹 배포/실행용 진입 파일 (Home 관제맵)
-├── home_fullscreen_map.html     # 필드시험장 5-Layer 관제맵 (실시간 CTL 주행 & 흙먼지 모션)
-├── preview_ctl_3d.html          # Bobcat CTL 3D 미니어처 360° 인터랙티브 뷰어 스튜디오
-├── prototype_field.html         # 초기 뷰포트 레이아웃 프로토타입
-└── picture/
-    ├── trackvision_terrain_3d_sim.jpg                  # 3D 시뮬레이션 톤 필드시험장 배경
-    ├── bobcat_ctl_ref.jpg                              # Bobcat CTL 다각도 레퍼런스 시트
-    └── trackvision_terrain_refined_clean_1793842243066.jpg # 초기 시험장 원본 이미지
+```sh
+python -m http.server 8521 --bind 127.0.0.1
 ```
 
----
+브라우저에서 [http://127.0.0.1:8521/](http://127.0.0.1:8521/)을 엽니다.
+ES 모듈을 사용하므로 HTML 파일을 직접 여는 방식 대신 HTTP 서버가 필요합니다.
+Three.js와 이미지 자산은 저장소에 포함되어 있으며 CDN 연결은 필요하지 않습니다.
 
-## 🚀 주요 기능 및 핵심 아키텍처
+## 구현 내용
 
-### 1. 필드시험장 5-Layer 관제맵 (`home_fullscreen_map.html`)
-* **Layer 1**: 3D 시뮬레이션 톤 고해상도 시험장 배경
-* **Layer 2**: 장비 이동 경로(SVG Path)
-* **Layer 3**: Bobcat CTL 실시간 3D 궤도 주행 및 흙먼지(Dust Particle) 흩날림 물리 모션
-* **Layer 4**: 차고지(Panorama 연동), 사무실(Report Studio 연동) 인터랙티브 영역 (대기)
-* **Layer 5**: 우측 상단 실시간 관제 현황 및 시험시간 정보 HUD 카드
+- A–E 시험 노면을 클릭하여 주차 → 진입 → 순환 주행.
+- E 북서쪽 외벽에 별도 출입구를 추가한 사진 배경.
+- 주행 거리와 동기화한 좌우 궤도 회전 및 노면에 따른 차체·암 반응.
+- 건물, 벽, 수목 경계에 대한 차체와 버킷의 충돌 검사.
+- 주차장 복귀, 주행 도중 일시 정지, 순환 종료 후 다른 노면으로 변경.
+- 기본 1.5배 재생 및 1·1.5·2배 선택.
+- 주요 시험장과 건물을 함께 보여주는 전체 보기 및 장비 추적 보기.
 
-### 2. Bobcat CTL 3D 미니어처 엔진 (`preview_ctl_3d.html`)
-* **Pure Vanilla JS & Canvas 3D**: 무거운 외부 라이브러리/GLB 없이 60fps 고정 구동
-* **실시간 360° 회전 및 8방향 프리셋**
-* **순백색 하이키 셰이딩** 및 3D 폴리곤 UV 클리핑 기반의 **Bobcat 고양이 심볼 & 타이포그래피** 정밀 렌더링
-* **고무트랙 주행 회전** 및 **리프트 암/버킷 승강 조작**
+속도와 주행 거리는 시뮬레이션 값입니다. 배경은 사진이며 자유 회전 지형 모델은 아닙니다.
+차고지·사무실의 업무 화면 연결과 실제 운행 정보 표시는 후속 작업입니다.
+
+## 파일
+
+| 경로 | 용도 |
+| --- | --- |
+| `index.html`, `home_fullscreen_map.html` | 최신 시뮬레이션 진입 화면 |
+| `field-simulation/` | Three.js 렌더링, 주행 모션, 경로, 사진 자산 |
+| `field-simulation/integration/` | Streamlit Home 연결 방법과 표시 컴포넌트 |
+| `field-simulation/verification/` | 주행·충돌·화면 맞춤 검증 코드 및 결과 |
+| `preview_ctl_3d.html` | 기존 CTL 장비 외형 뷰어 |
+| `prototype_field.html` | 초기 레이아웃 |
+| `picture/` | 기존 시험장·장비 참조 이미지 |
+
+[구현과 검증 상세](field-simulation/README.md) · [Home 연결 안내](field-simulation/integration/README.md)
+
+## 검증 및 현재 상태
+
+경로 11,795개 지점과 모션 108,365스텝 검사 결과를 포함합니다.
+출차·순환·복귀, B→E 변경, 정지·재개, 재생 배속, 잘못된 사무실 관통 경로 차단,
+데스크톱/모바일에서의 카메라 좌표와 전체 필드 맞춤을 검사했습니다.
+
+실제 브라우저의 최종 화면·성능 검수는 아직 완료하지 못했습니다.
+참고 영상, 중복 라이브러리 다운로드, 별도 앱의 전체 소스 백업은 저장소에서 제외합니다.

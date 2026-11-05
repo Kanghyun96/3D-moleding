@@ -1,0 +1,19 @@
+# Reference recording and local working copies
+/녹화.mp4
+/field-simulation/archive/
+
+# Download/extraction cache; the three runtime files remain tracked
+/field-simulation/vendor/package/
+/field-simulation/vendor/*.tgz
+
+# Backups and installation receipts from the separate TrackVision application
+/field-simulation/integration/pages.py.*
+/field-simulation/integration/protected-before.json
+/field-simulation/integration/verification.json
+/field-simulation/integration/install-home.ps1
+
+# Editor and interpreter caches
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

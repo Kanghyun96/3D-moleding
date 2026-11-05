@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>TrackVision · Field Motion</title>
+  <link rel="stylesheet" href="field.css">
+</head>
+<body>
+  <main id="field-app" aria-label="필드 시험장 주행 시뮬레이션">
+    <div id="scene" role="img" aria-label="밥캣 T-870이 주행하는 입체 필드 시험장"><img id="field-photo" src="assets/field-photo-e-gate.png" alt="" draggable="false"></div>
+    <header class="topbar">
+      <div class="wordmark"><span class="brand-symbol"><i></i><i></i><i></i></span><div><b>TrackVision <span>FIELD</span></b><small>FIELD TESTING GROUND</small></div></div>
+      <div class="scene-title"><span class="live-dot"></span>필드 시험장<span class="divider"></span><span class="simulation-tag">주행 시뮬레이션 · 사진 기반</span></div>
+      <div class="view-controls" aria-label="카메라와 재생 속도"><label class="playback"><span>재생</span><select id="playback-rate" aria-label="시뮬레이션 재생 속도"><option value="1">1×</option><option value="1.5" selected>1.5×</option><option value="2">2×</option></select></label><button id="overview" class="active" title="시험장 전체 맞춤">전체 보기</button><button id="follow" title="장비를 가까이 보기">장비 보기</button></div>
+    </header>
+    <div id="labels" aria-hidden="true"></div>
+    <aside class="equipment-card">
+      <div class="equipment-heading"><span class="equipment-icon">↗</span><div><small>COMPACT TRACK LOADER</small><h1>Bobcat <b>T-870</b></h1></div><span id="status-dot" class="status-dot"></span></div>
+      <div class="equipment-status"><span id="state-label">주차 중</span><span id="surface-label">주차장</span></div>
+      <div class="telemetry"><div><strong id="speed">0.0</strong><small>km/h</small></div><div><strong id="distance">0</strong><small>m · 주행 거리</small></div><div><strong id="laps">0</strong><small>완료 회차</small></div></div>
+      <div class="contact-status"><span></span><p id="motion-note">시험 노면을 선택해 주행을 시작하세요.</p></div>
+    </aside>
+    <div class="north" aria-hidden="true"><span>N</span><svg width="28" height="37" viewBox="0 0 28 37"><path d="M14 2 23 30 14 24 5 30Z" fill="currentColor"/><path d="M14 2v22l9 6Z" fill="#c2c7c3"/></svg></div>
+    <footer class="bottom-bar">
+      <div class="route-intro"><span class="eyebrow">SELECT A SURFACE</span><b>시험 노면 선택</b><small id="route-hint">노면을 클릭하면 장비가 출발합니다.</small></div>
+      <nav class="routes" aria-label="시험 노면 선택">
+        <button data-route="A"><span>A</span><div><b>순환 주행로</b><small>COMPACTED SOIL</small></div></button>
+        <button data-route="B"><span>B</span><div><b>대형 선회로</b><small>TURNING COURSE</small></div></button>
+        <button data-route="C"><span>C</span><div><b>소형 선회로</b><small>SHORT COURSE</small></div></button>
+        <button data-route="D"><span>D</span><div><b>습지 · 자갈</b><small>ROUGH TERRAIN</small></div></button>
+        <button data-route="E"><span>E</span><div><b>요철 시험로</b><small>BLOCK COURSE</small></div></button>
+      </nav>
+      <div class="transport"><button id="pause" aria-label="주행 일시 정지" title="주행 일시 정지"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button><button id="return" title="주차장 복귀" aria-label="주차장 복귀"><svg viewBox="0 0 24 24"><path d="M4 10h10a6 6 0 0 1 0 12M4 10l5-5M4 10l5 5" transform="translate(0 -3)"/></svg></button></div>
+    </footer>
+    <div id="loading"><span class="loader-ring"></span><b>시험장을 준비하고 있습니다</b><small>Bobcat T-870 · Field Motion</small></div>
+    <div id="error" hidden><b>3D 화면을 열 수 없습니다.</b><p id="error-message"></p><button onclick="location.reload()">다시 시도</button></div>
+    <div id="quality" hidden></div>
+  </main>
+  <script src="streamlit-bridge.js"></script>
+  <script type="module" src="simulation.js"></script>
+</body></html>

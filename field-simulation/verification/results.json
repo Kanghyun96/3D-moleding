@@ -1,0 +1,82 @@
+{
+  "date": "2026-11-05",
+  "passed": true,
+  "pathSamples": 11795,
+  "motionSteps": 108365,
+  "cases": [
+    {
+      "name": "A entry / two laps / reverse return",
+      "seconds": 246.7,
+      "laps": 2
+    },
+    {
+      "name": "A mid-entry return",
+      "passed": true
+    },
+    {
+      "name": "B entry / two laps / reverse return",
+      "seconds": 188.25,
+      "laps": 2
+    },
+    {
+      "name": "B mid-entry return",
+      "passed": true
+    },
+    {
+      "name": "C entry / two laps / reverse return",
+      "seconds": 175.06666666666666,
+      "laps": 2
+    },
+    {
+      "name": "C mid-entry return",
+      "passed": true
+    },
+    {
+      "name": "D entry / two laps / reverse return",
+      "seconds": 209.03333333333333,
+      "laps": 2
+    },
+    {
+      "name": "D mid-entry return",
+      "passed": true
+    },
+    {
+      "name": "E entry / two laps / reverse return",
+      "seconds": 211.26666666666668,
+      "laps": 2
+    },
+    {
+      "name": "E mid-entry return",
+      "passed": true
+    },
+    {
+      "name": "B → parking → E",
+      "passed": true
+    },
+    {
+      "name": "pause / resume",
+      "passed": true
+    },
+    {
+      "name": "1× playback",
+      "distance": 51.570864812452406
+    },
+    {
+      "name": "1.5× playback",
+      "distance": 72.88668888688983
+    },
+    {
+      "name": "2× playback",
+      "distance": 99.87933319415234
+    },
+    {
+      "name": "invalid office crossing stops before contact",
+      "passed": true
+    },
+    {
+      "name": "photo registration / desktop and mobile full-field framing",
+      "passed": true
+    }
+  ],
+  "projectionError": 4.963638160851638e-13
+}
