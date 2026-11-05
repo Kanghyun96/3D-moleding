@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackVision AI — Bobcat CTL 3D Miniature Studio</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: rgba(255, 255, 255, 0.92);
+      --border-subtle: rgba(15, 23, 42, 0.12);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --accent-orange: #ea580c;
+      --accent-blue: #0284c7;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1e293b;
+      color: var(--text-main);
+    }
+
+    .studio-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* 좌측 메인 3D 프리뷰 스테이지 */
+    .stage-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 45%, #d6d9de 0%, #9ca3af 100%);
+      transition: background 0.3s ease;
+    }
+
+    /* 실제 필드시험장 노면 배경 모드 */
+    .stage-container.terrain-mode {
+      background-image: url("picture/trackvision_terrain_3d_sim.jpg");
+      background-size: cover;
+      background-position: center 62%;
+    }
+
+    #ctlCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    #ctlCanvas:active {
+      cursor: grabbing;
+    }
+
+    /* 상단 타이틀 배지 */
+    .stage-header {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      color: #f8fafc;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      pointer-events: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .stage-header h1 {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stage-header h1 span {
+      background: var(--accent-orange);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .stage-header p {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+
+    /* 하단 8방향 빠른 회전 컴퍼스 바 */
+    .compass-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .dir-btn {
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .dir-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .dir-btn.active {
+      background: var(--accent-orange);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(234, 88, 12, 0.5);
+    }
+
+    /* 우측 컨트롤 & 레퍼런스 비교 사이드 패널 */
+    .control-sidebar {
+      background: #f8fafc;
+      border-left: 1px solid var(--border-subtle);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .panel-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-row {
+      margin-bottom: 12px;
+    }
+
+    .control-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .control-label b {
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-orange);
+      cursor: pointer;
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .action-btn {
+      border: 1px solid var(--border-subtle);
+      background: #f1f5f9;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .action-btn.active {
+      background: var(--accent-blue);
+      color: #ffffff;
+      border-color: var(--accent-blue);
+    }
+
+    .ref-img-box {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #e5e7eb;
+    }
+
+    .ref-img-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .spec-list {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      padding-left: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="studio-layout">
+    <!-- 좌측 3D 미니어처 인터랙티브 캔버스 -->
+    <div class="stage-container" id="stageContainer">
+      <div class="stage-header">
+        <h1>Bobcat CTL 3D 미니어처 <span>화이트 프레임 & 로고 디테일 업그레이드</span></h1>
+        <p>마우스로 드래그하거나 하단 방향 버튼(특히 ↑ 북(후면), ↗ 북동, ↙ 남서)을 눌러 화이트 프레임과 Bobcat 로고를 확인해 보세요.</p>
+      </div>
+
+      <canvas id="ctlCanvas"></canvas>
+
+      <!-- 8방향 회전 프리셋 바 -->
+      <div class="compass-bar">
+        <button class="dir-btn" data-angle="180">↑ 북 (후면 로고)</button>
+        <button class="dir-btn" data-angle="225">↗ 북동 (후측면)</button>
+        <button class="dir-btn" data-angle="270">→ 동 (우측면)</button>
+        <button class="dir-btn" data-angle="315">↘ 남동</button>
+        <button class="dir-btn" data-angle="0">↓ 남 (정면)</button>
+        <button class="dir-btn active" data-angle="135">↖ 북서 (후측면 로고)</button>
+        <button class="dir-btn" data-angle="90">← 서 (좌측면)</button>
+        <button class="dir-btn" data-angle="42">↙ 남서 (전측면)</button>
+      </div>
+    </div>
+
+    <!-- 우측 컨트롤 및 원본 비교 패널 -->
+    <aside class="control-sidebar">
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>🎮 실시간 3D 자세 및 카메라 제어</span>
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">
+            <span>장비 회전 각도 (Yaw)</span>
+            <b id="yawVal">135°</b>
+          </div>
+          <input type="range" id="yawSlider" min="0" max="360" value="135" step="1">
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">
+            <span>카메라 내려다보기 각도 (Pitch)</span>
+            <b id="pitchVal">28° (시험장 기준)</b>
+          </div>
+          <input type="range" id="pitchSlider" min="10" max="65" value="28" step="1">
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">
+            <span>미니어처 배율 (Scale)</span>
+            <b id="scaleVal">105%</b>
+          </div>
+          <input type="range" id="scaleSlider" min="35" max="150" value="105" step="1">
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">
+            <span>리프트 암 & 버킷 높이</span>
+            <b id="armVal">주행 자세 (낮음)</b>
+          </div>
+          <input type="range" id="armSlider" min="0" max="100" value="8" step="1">
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>⚙️ 주행 동작 & 배경 테스트</span>
+        </div>
+        <div class="toggle-grid">
+          <button class="action-btn active" id="trackRollBtn">고무트랙 주행: ON</button>
+          <button class="action-btn" id="turntableBtn">360° 자동 회전: OFF</button>
+          <button class="action-btn" id="bgModeBtn">배경: 스튜디오 그레이</button>
+          <button class="action-btn" id="multiViewBtn">8방향 원형 배치: OFF</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>📸 제공해주신 원본 레퍼런스 비교</span>
+        </div>
+        <div class="ref-img-box">
+          <img src="picture/bobcat_ctl_ref.jpg" alt="Bobcat CTL Reference">
+        </div>
+        <ul class="spec-list" style="margin-top: 10px;">
+          <li><b>퓨어 화이트 프레임</b>: 측면 타워·리프트 암·하단 사이드 스커트·상단 크로스바 고명도 화이트 적용</li>
+          <li><b>후면 Bobcat 로고</b>: 오렌지 도어 중앙 퓨마(고양이) 심볼 + <b>Bobcat</b> 타이포그래피 + 우측 상단 배지</li>
+          <li><b>측면 프레임 데칼</b>: 화이트 암 측면 고양이 로고 + <b>Bobcat</b> 레터링 + 오렌지/블랙 스트라이프</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    /**
+     * TrackVision AI — Pure Vanilla JS 3D Miniature Renderer (Bobcat CTL v2)
+     * - 고명도 퓨어 화이트 리프트 암 & 사이드 프레임 구조 강화
+     * - 후면 오렌지 테일게이트 & 측면 화이트 암에 Bobcat 고양이 심볼 + Bobcat 레터링 3D 투영 매핑
+     */
+    const canvas = document.getElementById('ctlCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const state = {
+      yaw: 135,         // 초기 각도: 후면 로고와 측면 화이트 프레임이 동시에 잘 보이는 135도(후측면)
+      pitch: 28,
+      scale: 1.05,
+      armLift: 0.08,
+      trackRoll: true,
+      turntable: false,
+      multiView: false,
+      trackPhase: 0,
+      isDragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    // =========================================================================
+    // 고해상도 오프스크린 데칼 텍스처 생성 (후면 오렌지 도어 & 측면 화이트 암)
+    // =========================================================================
+    function drawBobcatHeadIcon(g, cx, cy, size, color) {
+      g.save();
+      g.translate(cx, cy);
+      const s = size / 100;
+      g.scale(s, s);
+      g.fillStyle = color;
+
+      // Bobcat 시그니처 기하학적 고양이(Lynx/Bobcat) 헤드 실루엣
+      g.beginPath();
+      g.moveTo(-42, -18);
+      g.lineTo(-48, -46); // 좌측 귀 끝
+      g.lineTo(-20, -30);
+      g.lineTo(12, -30);
+      g.lineTo(38, -46);  // 우측 귀 끝
+      g.lineTo(34, -16);
+      g.lineTo(48, 2);    // 우측 볼 털(Cheek tuft)
+      g.lineTo(30, 18);
+      g.lineTo(38, 28);
+      g.lineTo(14, 38);   // 턱 끝
+      g.lineTo(-16, 38);
+      g.lineTo(-34, 24);
+      g.lineTo(-48, 6);   // 좌측 볼 털
+      g.closePath();
+      g.fill();
+
+      // 눈 & 코 음각 컷아웃 (바탕색으로 비우기)
+      g.globalCompositeOperation = 'destination-out';
+      // 좌측 눈
+      g.beginPath();
+      g.moveTo(-24, -8); g.lineTo(-6, -2); g.lineTo(-18, 4); g.closePath();
+      g.fill();
+      // 우측 눈
+      g.beginPath();
+      g.moveTo(22, -8); g.lineTo(6, -2); g.lineTo(18, 4); g.closePath();
+      g.fill();
+      // 코 & 입 라인
+      g.beginPath();
+      g.moveTo(-8, 14); g.lineTo(8, 14); g.lineTo(0, 24); g.closePath();
+      g.fill();
+
+      g.restore();
+    }
+
+    // 1) 후면 오렌지 테일게이트 전용 고해상도 텍스처 (512 x 280)
+    const rearDecalCanvas = document.createElement('canvas');
+    rearDecalCanvas.width = 512;
+    rearDecalCanvas.height = 280;
+    (function buildRearDecal() {
+      const g = rearDecalCanvas.getContext('2d');
+      // 오렌지 도어 베이스 그라데이션
+      const grad = g.createLinearGradient(0, 0, 0, 280);
+      grad.addColorStop(0, '#f97316');
+      grad.addColorStop(0.5, '#ea580c');
+      grad.addColorStop(1, '#c2410c');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 512, 280);
+
+      // 외곽 다크 프레임 몰딩
+      g.strokeStyle = '#1e2228';
+      g.lineWidth = 10;
+      g.strokeRect(5, 5, 502, 270);
+
+      // 상단 가로 음각 라인 & 우측 모델 배지 포켓 (레퍼런스 사진 상단 검은 바 + 흰색 배지)
+      g.fillStyle = '#23272e';
+      g.beginPath();
+      g.roundRect(36, 34, 440, 44, 8);
+      g.fill();
+
+      // 상단 좌측 리어 테일램프 (붉은 LED) & 우측 은색/흰색 모델명 배지
+      g.fillStyle = '#dc2626';
+      g.fillRect(52, 46, 46, 18);
+      g.fillStyle = '#f8fafc';
+      g.fillRect(356, 45, 58, 20);
+      g.fillStyle = '#0f172a';
+      g.font = '900 13px "Pretendard", "Segoe UI", sans-serif';
+      g.fillText('T76', 371, 60);
+
+      // 우측 도어 래치 핸들
+      g.fillStyle = '#94a3b8';
+      g.fillRect(432, 46, 26, 18);
+
+      // 중앙 하단: 흰색 Bobcat 고양이 헤드 로고 + "Bobcat" 굵은 레터링 (크고 선명하게!)
+      drawBobcatHeadIcon(g, 118, 182, 108, '#ffffff');
+
+      g.fillStyle = '#ffffff';
+      g.font = 'italic 900 82px "Arial Black", "Pretendard", Impact, sans-serif';
+      g.fillText('Bobcat', 178, 210);
+    })();
+
+    // 2) 측면 화이트 리프트 암 전용 데칼 텍스처 (520 x 160)
+    function createSideArmDecal(isRightSide) {
+      const c = document.createElement('canvas');
+      c.width = 520;
+      c.height = 160;
+      const g = c.getContext('2d');
+
+      // 순백색 화이트 프레임 바탕 + 상하 테두리 강조
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, 520, 160);
+      g.strokeStyle = '#cbd5e1';
+      g.lineWidth = 6;
+      g.strokeRect(3, 3, 514, 154);
+
+      // 레퍼런스 사진의 측면 오렌지 & 차콜 스트라이프 라인
+      g.fillStyle = '#1e2228';
+      g.beginPath();
+      if (!isRightSide) {
+        g.moveTo(210, 46); g.lineTo(490, 46); g.lineTo(470, 78); g.lineTo(195, 78);
+      } else {
+        g.moveTo(30, 46); g.lineTo(310, 46); g.lineTo(325, 78); g.lineTo(50, 78);
+      }
+      g.closePath();
+      g.fill();
+
+      g.fillStyle = '#ea580c';
+      g.beginPath();
+      if (!isRightSide) {
+        g.moveTo(200, 84); g.lineTo(465, 84); g.lineTo(450, 112); g.lineTo(188, 112);
+      } else {
+        g.moveTo(55, 84); g.lineTo(320, 84); g.lineTo(332, 112); g.lineTo(70, 112);
+      }
+      g.closePath();
+      g.fill();
+
+      // 후방 측면 Bobcat 고양이 아이콘 + Bobcat 텍스트 + 오렌지 모델 배지 (크기 확대)
+      const baseX = isRightSide ? 335 : 16;
+      drawBobcatHeadIcon(g, baseX + 26, 62, 46, '#111827');
+      g.fillStyle = '#111827';
+      g.font = 'italic 900 32px "Arial Black", "Pretendard", sans-serif';
+      g.fillText('Bobcat', baseX + 52, 74);
+
+      // 하단 오렌지 모델 스트립 (T76)
+      g.fillStyle = '#ea580c';
+      g.fillRect(baseX + 52, 84, 96, 26);
+      g.fillStyle = '#ffffff';
+      g.font = '900 17px "Arial Black", "Pretendard", sans-serif';
+      g.fillText('T76', baseX + 80, 103);
+
+      return c;
+    }
+    const leftArmDecal = createSideArmDecal(false);
+    const rightArmDecal = createSideArmDecal(true);
+
+    // UI 엘리먼트 연결
+    const yawSlider = document.getElementById('yawSlider');
+    const pitchSlider = document.getElementById('pitchSlider');
+    const scaleSlider = document.getElementById('scaleSlider');
+    const armSlider = document.getElementById('armSlider');
+    const yawVal = document.getElementById('yawVal');
+    const pitchVal = document.getElementById('pitchVal');
+    const scaleVal = document.getElementById('scaleVal');
+    const armVal = document.getElementById('armVal');
+    const dirBtns = document.querySelectorAll('.dir-btn');
+
+    function syncUI() {
+      const normYaw = ((Math.round(state.yaw) % 360) + 360) % 360;
+      yawSlider.value = normYaw;
+      yawVal.textContent = normYaw + '°';
+      pitchSlider.value = Math.round(state.pitch);
+      pitchVal.textContent = Math.round(state.pitch) + '°';
+      scaleVal.textContent = Math.round(state.scale * 100) + '%';
+      armVal.textContent = state.armLift < 0.25 ? '주행 자세 (낮음)' : (state.armLift > 0.7 ? '최대 인양' : '작업 자세 (' + Math.round(state.armLift * 100) + '%)');
+
+      dirBtns.forEach((btn) => {
+        const target = Number(btn.dataset.angle);
+        btn.classList.toggle('active', Math.abs(normYaw - target) <= 8);
+      });
+    }
+
+    yawSlider.addEventListener('input', (e) => { state.yaw = Number(e.target.value); syncUI(); });
+    pitchSlider.addEventListener('input', (e) => { state.pitch = Number(e.target.value); syncUI(); });
+    scaleSlider.addEventListener('input', (e) => { state.scale = Number(e.target.value) / 100; syncUI(); });
+    armSlider.addEventListener('input', (e) => { state.armLift = Number(e.target.value) / 100; syncUI(); });
+
+    dirBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.yaw = Number(btn.dataset.angle);
+        syncUI();
+      });
+    });
+
+    document.getElementById('trackRollBtn').addEventListener('click', (e) => {
+      state.trackRoll = !state.trackRoll;
+      e.currentTarget.classList.toggle('active', state.trackRoll);
+      e.currentTarget.textContent = '고무트랙 주행: ' + (state.trackRoll ? 'ON' : 'OFF');
+    });
+
+    document.getElementById('turntableBtn').addEventListener('click', (e) => {
+      state.turntable = !state.turntable;
+      e.currentTarget.classList.toggle('active', state.turntable);
+      e.currentTarget.textContent = '360° 자동 회전: ' + (state.turntable ? 'ON' : 'OFF');
+    });
+
+    document.getElementById('bgModeBtn').addEventListener('click', (e) => {
+      const stage = document.getElementById('stageContainer');
+      const isTerrain = stage.classList.toggle('terrain-mode');
+      e.currentTarget.classList.toggle('active', isTerrain);
+      e.currentTarget.textContent = isTerrain ? '배경: 실제 시험장 노면' : '배경: 스튜디오 그레이';
+    });
+
+    document.getElementById('multiViewBtn').addEventListener('click', (e) => {
+      state.multiView = !state.multiView;
+      e.currentTarget.classList.toggle('active', state.multiView);
+      e.currentTarget.textContent = '8방향 원형 배치: ' + (state.multiView ? 'ON' : 'OFF');
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      state.isDragging = true;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!state.isDragging) return;
+      const dx = e.clientX - state.lastX;
+      const dy = e.clientY - state.lastY;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      state.yaw = (state.yaw - dx * 0.65) % 360;
+      state.pitch = Math.max(10, Math.min(65, state.pitch + dy * 0.35));
+      syncUI();
+    });
+
+    canvas.addEventListener('pointerup', () => { state.isDragging = false; });
+
+    // =========================================================================
+    // 3D 수학 및 폴리곤 빌더 유틸리티
+    // =========================================================================
+    function vec3(x, y, z) { return { x, y, z }; }
+    function sub3(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+    function cross3(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+    function normalize3(v) {
+      const len = Math.hypot(v.x, v.y, v.z) || 1;
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    }
+    function dot3(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+    function shadeHex(hex, factor) {
+      const num = parseInt(hex.slice(1), 16);
+      let r = (num >> 16) & 255;
+      let g = (num >> 8) & 255;
+      let b = num & 255;
+      r = Math.min(255, Math.max(0, Math.round(r * factor)));
+      g = Math.min(255, Math.max(0, Math.round(g * factor)));
+      b = Math.min(255, Math.max(0, Math.round(b * factor)));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function addBox(faces, x0, y0, z0, x1, y1, z1, colors, tag = '', isWhiteFrame = false) {
+      const c = typeof colors === 'string'
+        ? { top: colors, bottom: colors, front: colors, back: colors, left: colors, right: colors }
+        : {
+            top: colors.top || colors.base,
+            bottom: colors.bottom || colors.base,
+            front: colors.front || colors.base,
+            back: colors.back || colors.base,
+            left: colors.left || colors.base,
+            right: colors.right || colors.base
+          };
+
+      const v = [
+        vec3(x0, y0, z0), vec3(x1, y0, z0), vec3(x1, y1, z0), vec3(x0, y1, z0),
+        vec3(x0, y0, z1), vec3(x1, y0, z1), vec3(x1, y1, z1), vec3(x0, y1, z1)
+      ];
+
+      faces.push({ verts: [v[3], v[2], v[6], v[7]], color: c.top, tag, isWhiteFrame });
+      faces.push({ verts: [v[0], v[4], v[5], v[1]], color: c.bottom, tag, isWhiteFrame });
+      faces.push({ verts: [v[4], v[7], v[6], v[5]], color: c.front, tag, isWhiteFrame });
+      faces.push({ verts: [v[1], v[2], v[3], v[0]], color: c.back, tag: tag === 'tailgate' ? 'tailgate_back' : tag, isWhiteFrame });
+      faces.push({ verts: [v[0], v[3], v[7], v[4]], color: c.left, tag: tag === 'cab' ? 'cab_side' : tag, isWhiteFrame });
+      faces.push({ verts: [v[5], v[6], v[2], v[1]], color: c.right, tag: tag === 'cab' ? 'cab_side' : tag, isWhiteFrame });
+    }
+
+    function addHexahedron(faces, pts, color, tag = '', isWhiteFrame = false) {
+      faces.push({ verts: [pts[4], pts[5], pts[6], pts[7]], color, tag: tag ? tag + '_top' : '', isWhiteFrame });
+      faces.push({ verts: [pts[0], pts[3], pts[2], pts[1]], color, tag, isWhiteFrame });
+      faces.push({ verts: [pts[3], pts[7], pts[6], pts[2]], color, tag: tag ? tag + '_front' : '', isWhiteFrame });
+      faces.push({ verts: [pts[1], pts[5], pts[4], pts[0]], color, tag: tag ? tag + '_back' : '', isWhiteFrame });
+      faces.push({ verts: [pts[0], pts[4], pts[7], pts[3]], color, tag: tag ? tag + '_outer' : '', isWhiteFrame });
+      faces.push({ verts: [pts[2], pts[6], pts[5], pts[1]], color, tag: tag ? tag + '_inner' : '', isWhiteFrame });
+    }
+
+    function addCylinderX(faces, x0, x1, cy, cz, r, segments, sideColor, capColor) {
+      const capLeft = [];
+      const capRight = [];
+      for (let i = 0; i < segments; i++) {
+        const a0 = (i / segments) * Math.PI * 2;
+        const a1 = ((i + 1) / segments) * Math.PI * 2;
+        const y0 = cy + Math.sin(a0) * r;
+        const z0 = cz + Math.cos(a0) * r;
+        const y1 = cy + Math.sin(a1) * r;
+        const z1 = cz + Math.cos(a1) * r;
+
+        faces.push({
+          verts: [vec3(x0, y0, z0), vec3(x0, y1, z1), vec3(x1, y1, z1), vec3(x1, y0, z0)],
+          color: sideColor
+        });
+        capLeft.push(vec3(x0, y0, z0));
+        capRight.unshift(vec3(x1, y0, z0));
+      }
+      faces.push({ verts: capLeft, color: capColor });
+      faces.push({ verts: capRight, color: capColor });
+    }
+
+    // =========================================================================
+    // Bobcat CTL 3D 메쉬 조립 (화이트 프레임 볼륨 대폭 강화)
+    // =========================================================================
+    function buildBobcatCTLMesh(armLift = 0.08, trackPhase = 0) {
+      const faces = [];
+
+      // 순백색(Pure Bright White)으로 그림자에서도 선명한 흰색 유지
+      const C_WHITE = '#ffffff';
+      const C_ORANGE = '#ea580c';
+      const C_CAB = '#272b33';
+      const C_CAB_ROOF = '#323842';
+      const C_TRACK = '#1c1f24';
+      const C_TRACK_LUG = '#282d35';
+      const C_STEEL = '#20242a';
+      const C_BUCKET = '#252930';
+      const C_CHROME = '#e2e8f0';
+
+      // 1. 좌/우 삼각 고무트랙(Rubber Track) 및 롤러
+      [-1, 1].forEach((side) => {
+        const xIn = side * 0.58;
+        const xOut = side * 0.95;
+        const xL = Math.min(xIn, xOut);
+        const xR = Math.max(xIn, xOut);
+
+        const loop = [
+          { y: 0.04, z: -0.92 },
+          { y: 0.04, z:  0.95 },
+          { y: 0.24, z:  1.15 },
+          { y: 0.44, z:  1.02 },
+          { y: 0.72, z:  0.04 },
+          { y: 0.72, z: -0.18 },
+          { y: 0.44, z: -1.04 },
+          { y: 0.22, z: -1.13 }
+        ];
+
+        const innerLoop = loop.map((p) => ({
+          y: p.y + (0.35 - p.y) * 0.26,
+          z: p.z * 0.86
+        }));
+
+        for (let i = 0; i < loop.length; i++) {
+          const ni = (i + 1) % loop.length;
+          const p0 = loop[i], p1 = loop[ni];
+          const q0 = innerLoop[i], q1 = innerLoop[ni];
+
+          faces.push({
+            verts: [vec3(xL, p0.y, p0.z), vec3(xL, p1.y, p1.z), vec3(xR, p1.y, p1.z), vec3(xR, p0.y, p0.z)],
+            color: C_TRACK
+          });
+          const sx = side < 0 ? xL : xR;
+          const vA = vec3(sx, p0.y, p0.z);
+          const vB = vec3(sx, p1.y, p1.z);
+          const vC = vec3(sx, q1.y, q1.z);
+          const vD = vec3(sx, q0.y, q0.z);
+          faces.push({
+            verts: side < 0 ? [vA, vD, vC, vB] : [vA, vB, vC, vD],
+            color: '#15171b'
+          });
+        }
+
+        addBox(faces, xL + 0.04, 0.14, -0.94, xR - 0.04, 0.36, 0.96, '#141619');
+
+        const wheelX0 = side < 0 ? xL - 0.01 : xL + 0.04;
+        const wheelX1 = side < 0 ? xR - 0.04 : xR + 0.01;
+        addCylinderX(faces, wheelX0, wheelX1, 0.56, -0.07, 0.15, 10, '#2a2e35', '#3f4652');
+        addCylinderX(faces, wheelX0, wheelX1, 0.27,  0.92, 0.16, 10, '#252930', '#383e48');
+        addCylinderX(faces, wheelX0, wheelX1, 0.27, -0.88, 0.16, 10, '#252930', '#383e48');
+        [-0.52, -0.18, 0.16, 0.50].forEach((rz) => {
+          addCylinderX(faces, wheelX0, wheelX1, 0.14, rz, 0.085, 8, '#1f2329', '#323842');
+        });
+
+        const lugCount = 18;
+        for (let k = 0; k < lugCount; k++) {
+          const t = ((k / lugCount) + trackPhase) % 1;
+          const segFloat = t * loop.length;
+          const idx = Math.floor(segFloat);
+          const frac = segFloat - idx;
+          const a = loop[idx];
+          const b = loop[(idx + 1) % loop.length];
+          const ly = a.y + (b.y - a.y) * frac;
+          const lz = a.z + (b.z - a.z) * frac;
+          const dy = b.y - a.y;
+          const dz = b.z - a.z;
+          const len = Math.hypot(dy, dz) || 1;
+          const ny = dz / len * 0.03;
+          const nz = -dy / len * 0.03;
+          faces.push({
+            verts: [
+              vec3(xL + 0.01, ly, lz),
+              vec3(xL + 0.01, ly + ny, lz + nz),
+              vec3(xR - 0.01, ly + ny, lz + nz),
+              vec3(xR - 0.01, ly, lz)
+            ],
+            color: C_TRACK_LUG
+          });
+        }
+      });
+
+      // 2. 하부 메인 차체 및 화이트 사이드 바디 스커트 (트랙 위쪽 흰색 차체 라인)
+      addBox(faces, -0.57, 0.18, -1.05, 0.57, 0.52, 0.88, C_STEEL);
+      addBox(faces, -0.46, 0.22, 0.88, 0.46, 0.42, 1.05, '#1b1e23');
+
+      // 3. 후면 오렌지 테일게이트 & 상단 블랙 라디에이터 그릴
+      addBox(faces, -0.58, 0.20, -1.25, 0.58, 0.35, -1.02, '#181b20');
+      addBox(faces, -0.53, 0.35, -1.24, 0.53, 1.00, -0.95, {
+        base: C_ORANGE,
+        top: '#f97316',
+        back: C_ORANGE,
+        left: '#d9480f',
+        right: '#d9480f'
+      }, 'tailgate');
+
+      // 후면 상단 블랙 엔진 방열 그릴 (화이트 프레임 사이에 선명하게 안착)
+      const grillePts = [
+        vec3(-0.52, 1.00, -1.20), vec3(0.52, 1.00, -1.20), vec3(0.52, 1.00, -0.42), vec3(-0.52, 1.00, -0.42),
+        vec3(-0.48, 1.12, -1.10), vec3(0.48, 1.12, -1.10), vec3(0.48, 1.18, -0.42), vec3(-0.48, 1.18, -0.42)
+      ];
+      addHexahedron(faces, grillePts, '#1e2228', 'grille');
+
+      // 4. 차콜 블랙 ROPS 캐빈
+      const cabPts = [
+        vec3(-0.47, 0.54, -0.45), vec3(0.47, 0.54, -0.45), vec3(0.47, 0.54, 0.72), vec3(-0.47, 0.54, 0.72),
+        vec3(-0.43, 1.63, -0.38), vec3(0.43, 1.63, -0.38), vec3(0.43, 1.56, 0.46), vec3(-0.43, 1.56, 0.46)
+      ];
+      addHexahedron(faces, cabPts, C_CAB, 'cab');
+
+      addBox(faces, -0.41, 1.59, -0.34, 0.41, 1.67, 0.40, C_CAB_ROOF);
+      addBox(faces, -0.25, 1.672, -0.10, 0.25, 1.68, 0.24, '#1e293b');
+      addBox(faces, -0.39, 1.50, 0.45, -0.25, 1.57, 0.49, '#f8fafc');
+      addBox(faces,  0.25, 1.50, 0.45,  0.39, 1.57, 0.49, '#f8fafc');
+
+      // -----------------------------------------------------------------------
+      // 5. ★ 퓨어 화이트 프레임 & 리프트 암 구조 (두께와 면적을 레퍼런스처럼 대폭 강조!)
+      // -----------------------------------------------------------------------
+      const liftAngle = armLift * 0.52;
+      const cosA = Math.cos(liftAngle);
+      const sinA = Math.sin(liftAngle);
+
+      function pivotArm(y, z) {
+        const dy = y - 1.28;
+        const dz = z - (-0.90);
+        return {
+          y: 1.28 + dy * cosA + dz * sinA,
+          z: -0.90 - dy * sinA + dz * cosA
+        };
+      }
+
+      [-1, 1].forEach((side) => {
+        const ax0 = side < 0 ? -0.74 : 0.49;
+        const ax1 = side < 0 ? -0.49 : 0.74;
+
+        // 5-0) 하단 화이트 사이드 바디 가드 (트랙 바로 위를 감싸는 흰색 차체 프레임)
+        addBox(faces, ax0 + 0.02, 0.40, -1.18, ax1 - 0.02, 0.62, 0.55, C_WHITE, '', true);
+
+        // 5-1) 후방 수직 화이트 타워 기둥 (리프트 암과 Z축이 겹치지 않도록 z: -1.22 ~ -0.68 구간에 정렬)
+        const tx0 = side < 0 ? ax0 + 0.012 : ax0;
+        const tx1 = side < 0 ? ax1 : ax1 - 0.012;
+        const towerPts = [
+          vec3(tx0, 0.42, -1.22), vec3(tx1, 0.42, -1.22), vec3(tx1, 0.42, -0.68), vec3(tx0, 0.42, -0.68),
+          vec3(tx0, 1.44, -1.10), vec3(tx1, 1.44, -1.10), vec3(tx1, 1.38, -0.70), vec3(tx0, 1.38, -0.70)
+        ];
+        addHexahedron(faces, towerPts, C_WHITE, side < 0 ? 'tower_left' : 'tower_right', true);
+
+        // 5-2) 측면 메인 화이트 리프트 암 (타워 앞쪽 z: -0.68 ~ +0.30 구간으로 분리하여 360도 어느 각도에서도 가려짐 없음!)
+        const pRearBot = pivotArm(0.92, -0.68);
+        const pRearTop = pivotArm(1.36, -0.68);
+        const pMidBot  = pivotArm(0.56,  0.28);
+        const pMidTop  = pivotArm(0.94,  0.32);
+        const pFrtBot  = pivotArm(0.18,  1.06);
+        const pFrtTop  = pivotArm(0.46,  1.00);
+
+        addHexahedron(faces, [
+          vec3(ax0, pRearBot.y, pRearBot.z), vec3(ax1, pRearBot.y, pRearBot.z),
+          vec3(ax1, pMidBot.y,  pMidBot.z),  vec3(ax0, pMidBot.y,  pMidBot.z),
+          vec3(ax0, pRearTop.y, pRearTop.z), vec3(ax1, pRearTop.y, pRearTop.z),
+          vec3(ax1, pMidTop.y,  pMidTop.z),  vec3(ax0, pMidTop.y,  pMidTop.z)
+        ], C_WHITE, side < 0 ? 'arm_left' : 'arm_right', true);
+
+        // 전방 하향 화이트 암 구간 (중간 꺾임부 -> 버킷 피벗)
+        addHexahedron(faces, [
+          vec3(ax0, pMidBot.y, pMidBot.z), vec3(ax1, pMidBot.y, pMidBot.z),
+          vec3(ax1, pFrtBot.y, pFrtBot.z), vec3(ax0, pFrtBot.y, pFrtBot.z),
+          vec3(ax0, pMidTop.y, pMidTop.z), vec3(ax1, pMidTop.y, pMidTop.z),
+          vec3(ax1, pFrtTop.y, pFrtTop.z), vec3(ax0, pFrtTop.y, pFrtTop.z)
+        ], C_WHITE, '', true);
+
+        // 5-3) 측면 유압 실린더 (블랙 배럴 + 크롬 로드)
+        const cylX0 = side < 0 ? -0.71 : 0.53;
+        const cylX1 = side < 0 ? -0.53 : 0.71;
+        const cMount = pivotArm(0.76, 0.08);
+        addHexahedron(faces, [
+          vec3(cylX0, 0.54, -0.78), vec3(cylX1, 0.54, -0.78),
+          vec3(cylX1, 0.66, -0.22), vec3(cylX0, 0.66, -0.22),
+          vec3(cylX0, 0.63, -0.78), vec3(cylX1, 0.63, -0.78),
+          vec3(cylX1, 0.75, -0.22), vec3(cylX0, 0.75, -0.22)
+        ], '#181b20');
+        addHexahedron(faces, [
+          vec3(cylX0 + 0.03, 0.67, -0.24), vec3(cylX1 - 0.03, 0.67, -0.24),
+          vec3(cylX1 - 0.03, cMount.y - 0.03, cMount.z), vec3(cylX0 + 0.03, cMount.y - 0.03, cMount.z),
+          vec3(cylX0 + 0.03, 0.73, -0.24), vec3(cylX1 - 0.03, 0.73, -0.24),
+          vec3(cylX1 - 0.03, cMount.y + 0.02, cMount.z), vec3(cylX0 + 0.03, cMount.y + 0.02, cMount.z)
+        ], C_CHROME);
+      });
+
+      // 5-4) 후방 상단 화이트 아치형 크로스바 핸들 (레퍼런스 사진 후면 상단의 선명한 흰색 가로바!)
+      const tieBot = pivotArm(1.34, -1.04);
+      const tieTop = pivotArm(1.45, -1.02);
+      addBox(faces, -0.73, tieBot.y, tieBot.z - 0.06, 0.73, tieTop.y, tieTop.z + 0.06, C_WHITE, '', true);
+
+      // 전방 화이트 암 연결 브릿지
+      const frtCross = pivotArm(0.34, 0.96);
+      addBox(faces, -0.62, frtCross.y - 0.07, frtCross.z - 0.07, 0.62, frtCross.y + 0.07, frtCross.z + 0.07, C_WHITE, '', true);
+      addBox(faces, -0.10, frtCross.y - 0.02, frtCross.z, 0.10, frtCross.y + 0.16, frtCross.z + 0.22, '#1e2229');
+
+      // 6. 전면 로더 버킷
+      const bPivot = pivotArm(0.22, 1.06);
+      const by = bPivot.y - 0.16;
+      const bz = bPivot.z;
+
+      addHexahedron(faces, [
+        vec3(-0.98, by,        bz),        vec3(0.98, by,        bz),
+        vec3(0.98,  by,        bz + 0.10), vec3(-0.98, by,        bz + 0.10),
+        vec3(-0.98, by + 0.52, bz - 0.06), vec3(0.98, by + 0.52, bz - 0.06),
+        vec3(0.98,  by + 0.52, bz + 0.04), vec3(-0.98, by + 0.52, bz + 0.04)
+      ], C_BUCKET);
+
+      addHexahedron(faces, [
+        vec3(-0.98, by + 0.50, bz - 0.06), vec3(0.98, by + 0.50, bz - 0.06),
+        vec3(0.98,  by + 0.56, bz + 0.16), vec3(-0.98, by + 0.56, bz + 0.16),
+        vec3(-0.98, by + 0.55, bz - 0.04), vec3(0.98, by + 0.55, bz - 0.04),
+        vec3(0.98,  by + 0.60, bz + 0.16), vec3(-0.98, by + 0.60, bz + 0.16)
+      ], '#30353e');
+
+      addHexahedron(faces, [
+        vec3(-0.98, by - 0.02, bz),        vec3(0.98, by - 0.02, bz),
+        vec3(0.98,  by - 0.03, bz + 0.68), vec3(-0.98, by - 0.03, bz + 0.68),
+        vec3(-0.98, by + 0.05, bz),        vec3(0.98, by + 0.05, bz),
+        vec3(0.98,  by + 0.02, bz + 0.68), vec3(-0.98, by + 0.02, bz + 0.68)
+      ], '#1e2126');
+
+      addBox(faces, -0.99, by - 0.03, bz + 0.66, 0.99, by + 0.025, bz + 0.75, '#64748b');
+
+      [-1, 1].forEach((side) => {
+        const sx0 = side < 0 ? -0.99 : 0.93;
+        const sx1 = side < 0 ? -0.93 : 0.99;
+        addHexahedron(faces, [
+          vec3(sx0, by,        bz),        vec3(sx1, by,        bz),
+          vec3(sx1, by,        bz + 0.70), vec3(sx0, by,        bz + 0.70),
+          vec3(sx0, by + 0.54, bz - 0.04), vec3(sx1, by + 0.54, bz - 0.04),
+          vec3(sx1, by + 0.12, bz + 0.56), vec3(sx0, by + 0.12, bz + 0.56)
+        ], C_BUCKET);
+      });
+
+      return faces;
+    }
+
+    // =========================================================================
+    // 3D 쿼드 표면 위에 오프스크린 텍스처(Bobcat 로고/레터링)를 투영 매핑하는 함수
+    // =========================================================================
+    function drawTexturedQuad(ctx, img, p0, p1, p2, p3, subdivide = 6) {
+      // p0(좌상), p1(우상), p2(우하), p3(좌하)를 세분화하여 왜곡 없는 3D 원근 텍스처 매핑 수행
+      const w = img.width;
+      const h = img.height;
+
+      for (let i = 0; i < subdivide; i++) {
+        const u0 = i / subdivide;
+        const u1 = (i + 1) / subdivide;
+
+        const tL = lerp2(p0, p1, u0);
+        const tR = lerp2(p0, p1, u1);
+        const bR = lerp2(p3, p2, u1);
+        const bL = lerp2(p3, p2, u0);
+
+        const sx = u0 * w;
+        const sw = (u1 - u0) * w;
+
+        // 두 개의 삼각형(tL-tR-bL, tR-bR-bL)으로 나누어 아핀 변환 매핑
+        drawTriangleImage(ctx, img, sx, 0, sx + sw, 0, sx, h, tL.x, tL.y, tR.x, tR.y, bL.x, bL.y);
+        drawTriangleImage(ctx, img, sx + sw, 0, sx + sw, h, sx, h, tR.x, tR.y, bR.x, bR.y, bL.x, bL.y);
+      }
+    }
+
+    function drawTriangleImage(ctx, img, sx0, sy0, sx1, sy1, sx2, sy2, dx0, dy0, dx1, dy1, dx2, dy2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(dx0, dy0);
+      ctx.lineTo(dx1, dy1);
+      ctx.lineTo(dx2, dy2);
+      ctx.closePath();
+      ctx.clip();
+
+      const denom = sx0 * (sy2 - sy1) - sx1 * sy2 + sx2 * sy1 + (sx1 - sx2) * sy0;
+      if (Math.abs(denom) < 1e-5) {
+        ctx.restore();
+        return;
+      }
+      const m11 = -(sy0 * (dx2 - dx1) - sy1 * dx2 + sy2 * dx1 + (sy1 - sy2) * dx0) / denom;
+      const m12 = (sy1 * dy2 + sy0 * (dy1 - dy2) - sy2 * dy1 + (sy2 - sy1) * dy0) / denom;
+      const m21 = (sx0 * (dx2 - dx1) - sx1 * dx2 + sx2 * dx1 + (sx1 - sx2) * dx0) / denom;
+      const m22 = -(sx1 * dy2 + sx0 * (dy1 - dy2) - sx2 * dy1 + (sx2 - sx1) * dy0) / denom;
+      const dx = (sx0 * (sy2 * dx1 - sy1 * dx2) + sy0 * (sx1 * dx2 - sx2 * dx1) + (sx2 * sy1 - sx1 * sy2) * dx0) / denom;
+      const dy = (sx0 * (sy2 * dy1 - sy1 * dy2) + sy0 * (sx1 * dy2 - sx2 * dy1) + (sx2 * sy1 - sx1 * sy2) * dy0) / denom;
+
+      ctx.transform(m11, m12, m21, m22, dx, dy);
+      ctx.drawImage(img, 0, 0);
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 단일 CTL 인스턴스 렌더링
+    // =========================================================================
+    function renderCTLInstance(cx, cy, yawDeg, pitchDeg, unitScale, faces) {
+      const yawRad = (yawDeg * Math.PI) / 180;
+      const pitchRad = (pitchDeg * Math.PI) / 180;
+      const cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+      const cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+
+      // 지면 접촉 그림자
+      ctx.save();
+      ctx.translate(cx, cy + unitScale * 0.22);
+      ctx.scale(1, Math.sin(pitchRad) * 0.95 + 0.25);
+      ctx.rotate(-yawRad);
+      const grad = ctx.createRadialGradient(0, 0, unitScale * 0.2, 0, 0, unitScale * 1.55);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.52)');
+      grad.addColorStop(0.6, 'rgba(0, 0, 0, 0.26)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(0, unitScale * 0.1, unitScale * 1.25, unitScale * 1.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      function project(v) {
+        const vy = v.y - 0.65;
+        const rx = v.x * cosY + v.z * sinY;
+        const rz = -v.x * sinY + v.z * cosY;
+        const ry = vy * cosP - rz * sinP;
+        const depth = vy * sinP + rz * cosP;
+        const persp = 1 / (1 - depth * 0.085);
+        return {
+          x: cx + rx * unitScale * persp,
+          y: cy - ry * unitScale * persp,
+          z: depth
+        };
+      }
+
+      const lightDir = normalize3({ x: -0.42, y: 0.80, z: 0.42 });
+
+      const projectedFaces = faces.map((f) => {
+        const pVerts = f.verts.map(project);
+        const w0 = f.verts[0], w1 = f.verts[1], w2 = f.verts[2];
+        const rotW = (v) => {
+          const rx = v.x * cosY + v.z * sinY;
+          const rz = -v.x * sinY + v.z * cosY;
+          const ry = v.y * cosP - rz * sinP;
+          const dz = v.y * sinP + rz * cosP;
+          return { x: rx, y: ry, z: dz };
+        };
+        const rw0 = rotW(w0), rw1 = rotW(w1), rw2 = rotW(w2);
+        const normal = normalize3(cross3(sub3(rw1, rw0), sub3(rw2, rw0)));
+
+        let avgZ = pVerts.reduce((acc, p) => acc + p.z, 0) / pVerts.length;
+
+        // ★ 긴 측면 리프트 암 폴리곤이 후방 타워/실린더 중심점(avgZ)보다 뒤로 밀려 글자가 가려지는 현상(Painter's Algorithm 한계) 보정
+        if (f.tag && f.tag.startsWith('arm_left') && sinY > 0) {
+          avgZ += 0.34 * sinY;
+        }
+        if (f.tag && f.tag.startsWith('arm_right') && sinY < 0) {
+          avgZ += 0.34 * (-sinY);
+        }
+        if (f.tag === 'tailgate_back' && cosY < 0) {
+          avgZ += 0.22 * (-cosY);
+        }
+
+        const diff = Math.max(0, dot3(normal, lightDir));
+        const hemi = (normal.y + 1) * 0.5;
+
+        // ★ 화이트 프레임은 어떤 각도에서도 밝고 깨끗한 순백색이 살아나도록 하이키(High-Key) 셰이딩 적용!
+        const shade = f.isWhiteFrame
+          ? (0.82 + diff * 0.16 + hemi * 0.08)
+          : (0.58 + diff * 0.36 + hemi * 0.14);
+
+        return {
+          pVerts,
+          avgZ,
+          normalZ: normal.z,
+          color: shadeHex(f.color, shade),
+          strokeColor: f.isWhiteFrame ? '#cbd5e1' : shadeHex(f.color, shade * 0.82),
+          tag: f.tag,
+          isWhiteFrame: f.isWhiteFrame
+        };
+      });
+
+      projectedFaces.sort((a, b) => a.avgZ - b.avgZ);
+
+      projectedFaces.forEach((pf) => {
+        ctx.beginPath();
+        ctx.moveTo(pf.pVerts[0].x, pf.pVerts[0].y);
+        for (let i = 1; i < pf.pVerts.length; i++) {
+          ctx.lineTo(pf.pVerts[i].x, pf.pVerts[i].y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = pf.color;
+        ctx.fill();
+        ctx.lineWidth = pf.isWhiteFrame ? 1.05 : 0.75;
+        ctx.strokeStyle = pf.strokeColor;
+        ctx.stroke();
+
+        // 1) ★ 후면 오렌지 테일게이트: 후면이 카메라를 향할 때(cosY < 0.15) 선명하게 표시
+        if (pf.tag === 'tailgate_back' && cosY < 0.15) {
+          const qRear = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
+          drawVectorBobcatOnQuad(ctx, qRear);
+        }
+
+        // 2) ★ 좌측 화이트 리프트 암 외측: 좌측면이 카메라를 향할 때(sinY > -0.05) 가려짐 없이 표시
+        if (pf.tag === 'arm_left_outer' && sinY > -0.05) {
+          const qLeft = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
+          drawSideVectorDecalOnQuad(ctx, qLeft, false);
+        }
+
+        // 3) ★ 우측 화이트 리프트 암 외측: 우측면이 카메라를 향할 때(sinY < 0.05) 가려짐 없이 표시
+        if (pf.tag === 'arm_right_inner' && sinY < 0.05) {
+          const qRight = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
+          drawSideVectorDecalOnQuad(ctx, qRight, true);
+        }
+
+        // 4) 캐빈 전면 유리창 & 반사광
+        if (pf.tag === 'cab_front') {
+          drawQuadInset(pf.pVerts, 0.14, 0.14, '#1e293b', '#475569');
+          drawQuadInset(pf.pVerts, 0.22, 0.25, 'rgba(148, 163, 184, 0.25)', null);
+        }
+
+        // 5) 캐빈 좌/우 측면 보호 메쉬 창
+        if (pf.tag === 'cab_outer' || pf.tag === 'cab_inner') {
+          drawQuadInset(pf.pVerts, 0.15, 0.16, '#15181e', '#3f4652', true);
+        }
+
+        // 6) 후면 상단 블랙 방열 그릴 루버 슬롯
+        if (pf.tag === 'grille_top' && pf.pVerts.length === 4) {
+          drawQuadInset(pf.pVerts, 0.12, 0.18, '#0f1217', '#2d333d', true);
+        }
+      });
+    }
+
+    // 폴리곤 영역 밖으로 절대 1픽셀도 삐져나가지 않도록 클리핑하는 헬퍼
+    function withQuadClip(ctx, q, fn) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(q[0].x, q[0].y);
+      ctx.lineTo(q[1].x, q[1].y);
+      ctx.lineTo(q[2].x, q[2].y);
+      ctx.lineTo(q[3].x, q[3].y);
+      ctx.closePath();
+      ctx.clip();
+      fn();
+      ctx.restore();
+    }
+
+    // 3D 쿼드 UV 좌표계(0~1) 위에 직접 다각형을 그리는 벡터 렌더러
+    function drawUVPolygon(ctx, q, uvPoints, fillStyle) {
+      ctx.beginPath();
+      uvPoints.forEach(([u, v], idx) => {
+        const p = bilerpQuad(q, u, v);
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+
+    function drawVectorBobcatCatHeadUV(ctx, q, uCenter, vCenter, uRadius, vRadius, fgColor, bgColor) {
+      const mapPt = (nx, ny) => [uCenter + (nx / 50) * uRadius, vCenter + (ny / 50) * vRadius];
+      // 고양이(Lynx) 외곽 헤드 실루엣 (뾰족한 두 귀 + 좌우 볼 털 + 턱선)
+      const headOutline = [
+        [-42, -18], [-48, -48], [-18, -30], [14, -30], [42, -48],
+        [36, -16], [50, 2], [32, 18], [40, 28], [14, 40],
+        [-16, 40], [-36, 24], [-50, 6]
+      ].map(([x, y]) => mapPt(x, y));
+      drawUVPolygon(ctx, q, headOutline, fgColor);
+
+      // 날카로운 눈 & 코 음각 표현
+      const leftEye = [[-26, -10], [-6, -2], [-20, 6]].map(([x, y]) => mapPt(x, y));
+      const rightEye = [[24, -10], [6, -2], [18, 6]].map(([x, y]) => mapPt(x, y));
+      const nose = [[-9, 14], [9, 14], [0, 26]].map(([x, y]) => mapPt(x, y));
+      drawUVPolygon(ctx, q, leftEye, bgColor);
+      drawUVPolygon(ctx, q, rightEye, bgColor);
+      drawUVPolygon(ctx, q, nose, bgColor);
+    }
+
+    // ★ 텍스트가 지정된 UV 가로폭(uSpan)과 세로폭(vHeight) 안에 100% 정확히 들어맞도록 자동 스케일링!
+    function drawQuadFittedText(ctx, q, uStart, vCenter, uSpan, vHeight, text, color) {
+      const pStart = bilerpQuad(q, uStart, vCenter);
+      const pEnd   = bilerpQuad(q, uStart + uSpan, vCenter);
+      const pTop   = bilerpQuad(q, uStart, vCenter - vHeight * 0.5);
+      const pBot   = bilerpQuad(q, uStart, vCenter + vHeight * 0.5);
+
+      const spanPx = Math.hypot(pEnd.x - pStart.x, pEnd.y - pStart.y);
+      if (spanPx < 6) return;
+
+      ctx.save();
+      const baseFontPx = 100;
+      ctx.font = `italic 900 ${baseFontPx}px "Arial Black", "Pretendard", Impact, sans-serif`;
+      const measuredW = ctx.measureText(text).width || 360;
+
+      // 텍스트 1px당 3D 화면 공간 벡터 계산 -> uStart ~ (uStart + uSpan) 구간에 정확히 100% 안착!
+      const ux = (pEnd.x - pStart.x) / measuredW;
+      const uy = (pEnd.y - pStart.y) / measuredW;
+      const vx = (pBot.x - pTop.x) / baseFontPx;
+      const vy = (pBot.y - pTop.y) / baseFontPx;
+
+      ctx.transform(ux, uy, vx, vy, pStart.x, pStart.y);
+      ctx.fillStyle = color;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+
+    function drawVectorBobcatOnQuad(ctx, q) {
+      withQuadClip(ctx, q, () => {
+        // 상단 블랙 가로 몰딩 바 + 좌측 적색 램프 + 우측 흰색 T76 배지
+        drawUVPolygon(ctx, q, [[0.09, 0.14], [0.91, 0.14], [0.91, 0.30], [0.09, 0.30]], '#1e2228');
+        drawUVPolygon(ctx, q, [[0.12, 0.17], [0.23, 0.17], [0.23, 0.27], [0.12, 0.27]], '#ef4444');
+        drawUVPolygon(ctx, q, [[0.71, 0.17], [0.85, 0.17], [0.85, 0.27], [0.71, 0.27]], '#ffffff');
+
+        // 중앙 하단(u: 0.16 ~ 0.84 내부): 흰색 고양이 심볼(u=0.23) + "Bobcat"(u=0.33~0.83)
+        drawVectorBobcatCatHeadUV(ctx, q, 0.23, 0.66, 0.085, 0.19, '#ffffff', '#ea580c');
+        drawQuadFittedText(ctx, q, 0.34, 0.66, 0.48, 0.30, 'Bobcat', '#ffffff');
+      });
+    }
+
+    function drawSideVectorDecalOnQuad(ctx, q, isRightSide) {
+      withQuadClip(ctx, q, () => {
+        if (!isRightSide) {
+          // 좌측 화이트 암: 후방(u: 0.07~0.38)에 고양이 로고 + Bobcat + 오렌지 배지, 전방(u: 0.44~0.90)에 스트라이프
+          drawVectorBobcatCatHeadUV(ctx, q, 0.10, 0.42, 0.042, 0.16, '#111827', '#ffffff');
+          drawQuadFittedText(ctx, q, 0.16, 0.42, 0.21, 0.26, 'Bobcat', '#111827');
+          drawUVPolygon(ctx, q, [[0.16, 0.60], [0.35, 0.60], [0.34, 0.76], [0.15, 0.76]], '#ea580c');
+          drawUVPolygon(ctx, q, [[0.44, 0.32], [0.90, 0.32], [0.87, 0.50], [0.42, 0.50]], '#1e2228');
+          drawUVPolygon(ctx, q, [[0.42, 0.54], [0.86, 0.54], [0.83, 0.72], [0.40, 0.72]], '#ea580c');
+        } else {
+          // 우측 화이트 암: 전방(u: 0.10~0.56)에 스트라이프, 후방(u: 0.62~0.93)에 고양이 로고 + Bobcat + 오렌지 배지
+          drawUVPolygon(ctx, q, [[0.10, 0.32], [0.56, 0.32], [0.58, 0.50], [0.13, 0.50]], '#1e2228');
+          drawUVPolygon(ctx, q, [[0.14, 0.54], [0.58, 0.54], [0.60, 0.72], [0.17, 0.72]], '#ea580c');
+          drawVectorBobcatCatHeadUV(ctx, q, 0.66, 0.42, 0.042, 0.16, '#111827', '#ffffff');
+          drawQuadFittedText(ctx, q, 0.72, 0.42, 0.21, 0.26, 'Bobcat', '#111827');
+          drawUVPolygon(ctx, q, [[0.71, 0.60], [0.90, 0.60], [0.89, 0.76], [0.70, 0.76]], '#ea580c');
+        }
+      });
+    }
+
+    function lerp2(a, b, t) {
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+
+    function bilerpQuad(q, u, v) {
+      const top = lerp2(q[0], q[1], u);
+      const bot = lerp2(q[3], q[2], u);
+      return lerp2(top, bot, v);
+    }
+
+    function drawQuadInset(q, padU, padV, fill, stroke, isMesh = false) {
+      const p0 = bilerpQuad(q, padU, padV);
+      const p1 = bilerpQuad(q, 1 - padU, padV);
+      const p2 = bilerpQuad(q, 1 - padU, 1 - padV);
+      const p3 = bilerpQuad(q, padU, 1 - padV);
+
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+
+      if (isMesh) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+        ctx.lineWidth = 0.65;
+        for (let i = 1; i <= 5; i++) {
+          const t = i / 6;
+          const a = lerp2(p0, p1, t), b = lerp2(p3, p2, t);
+          const c = lerp2(p0, p3, t), d = lerp2(p1, p2, t);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+          ctx.moveTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // =========================================================================
+    // 메인 렌더링 루프
+    // =========================================================================
+    function renderLoop() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      if (state.trackRoll) {
+        state.trackPhase = (state.trackPhase + 0.012) % 1;
+      }
+      if (state.turntable && !state.isDragging) {
+        state.yaw = (state.yaw + 0.45) % 360;
+        syncUI();
+      }
+
+      const faces = buildBobcatCTLMesh(state.armLift, state.trackPhase);
+      const cx = rect.width * 0.5;
+      const cy = rect.height * 0.52;
+
+      if (!state.multiView) {
+        const unitScale = Math.min(rect.width, rect.height) * 0.21 * state.scale;
+        renderCTLInstance(cx, cy, state.yaw, state.pitch, unitScale, faces);
+      } else {
+        const radius = Math.min(rect.width, rect.height) * 0.33;
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const smallScale = Math.min(rect.width, rect.height) * 0.082 * state.scale;
+        const dirs = [
+          { ang: 180, posAng: -90 },
+          { ang: 225, posAng: -45 },
+          { ang: 270, posAng: 0 },
+          { ang: 315, posAng: 45 },
+          { ang: 0,   posAng: 90 },
+          { ang: 45,  posAng: 135 },
+          { ang: 90,  posAng: 180 },
+          { ang: 135, posAng: -135 }
+        ];
+        dirs.forEach((d) => {
+          const rad = (d.posAng * Math.PI) / 180;
+          const px = cx + Math.cos(rad) * radius;
+          const py = cy + Math.sin(rad) * radius;
+          renderCTLInstance(px, py, d.ang, state.pitch, smallScale, faces);
+        });
+
+        renderCTLInstance(cx, cy, state.yaw, state.pitch, smallScale * 1.45, faces);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(renderLoop);
+    }
+
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>

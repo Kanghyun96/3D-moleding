@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackVision 관제 필드 프로토타입</title>
+  <style>
+    /* 기본 여백 제거 및 전체 화면 설정 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f19; /* 관제 센터 다크 배경 */
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* 필드 화면 전체 컨테이너 */
+    .field-viewport {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* 필드 배경 이미지 */
+    .field-map {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* 화면을 꽉 채우며 왜곡 방지 */
+      display: block;
+      user-select: none;
+    }
+
+    /* 상단 헤더 HUD UI */
+    .hud-header {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+
+    .hud-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #38bdf8;
+    }
+
+    .hud-status {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 전체 관제 뷰포트 -->
+  <div class="field-viewport">
+    <!-- 헤더 HUD 안내 -->
+    <header class="hud-header">
+      <div class="hud-title">TRACKVISION FIELD MONITORING</div>
+      <div class="hud-status">실시간 필드 시험장 현황 (프로토타입)</div>
+    </header>
+
+    <!-- 배경 시험장 맵 -->
+    <img 
+      src="picture/trackvision_terrain_refined_clean_1793842243066.jpg" 
+      alt="필드 시험장 전경" 
+      class="field-map"
+    >
+  </div>
+
+</body>
+</html>
+
