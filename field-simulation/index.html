@@ -7,11 +7,11 @@
 </head>
 <body>
   <main id="field-app" aria-label="필드 시험장 주행 시뮬레이션">
-    <div id="scene" role="img" aria-label="밥캣 T-870이 주행하는 입체 필드 시험장"><img id="field-photo" src="assets/field-photo-e-gate.png" alt="" draggable="false"></div>
+    <div id="scene" role="img" aria-label="밥캣 T-870이 주행하는 입체 필드 시험장"><img id="field-photo" src="assets/field-photo-a-uniform-source.png" alt="" draggable="false"></div>
     <header class="topbar">
       <div class="wordmark"><span class="brand-symbol"><i></i><i></i><i></i></span><div><b>TrackVision <span>FIELD</span></b><small>FIELD TESTING GROUND</small></div></div>
       <div class="scene-title"><span class="live-dot"></span>필드 시험장<span class="divider"></span><span class="simulation-tag">주행 시뮬레이션 · 사진 기반</span></div>
-      <div class="view-controls" aria-label="카메라와 재생 속도"><label class="playback"><span>재생</span><select id="playback-rate" aria-label="시뮬레이션 재생 속도"><option value="1">1×</option><option value="1.5" selected>1.5×</option><option value="2">2×</option></select></label><button id="overview" class="active" title="시험장 전체 맞춤">전체 보기</button><button id="follow" title="장비를 가까이 보기">장비 보기</button></div>
+      <div class="view-controls" aria-label="카메라와 재생 속도"><label class="playback"><span>재생 속도</span><input id="playback-rate" type="range" min="1" max="10" step="1" value="1" aria-label="시뮬레이션 재생 속도, 1배에서 10배"><output id="playback-value" for="playback-rate">1×</output></label><button id="overview" class="active" title="시험장 전체 맞춤">전체 보기</button><button id="follow" title="장비를 가까이 보기">장비 보기</button></div>
     </header>
     <div id="labels" aria-hidden="true"></div>
     <aside class="equipment-card">
@@ -37,5 +37,23 @@
     <div id="quality" hidden></div>
   </main>
   <script src="streamlit-bridge.js"></script>
-  <script type="module" src="simulation.js"></script>
+  <script>
+    // Module loading errors occur before simulation.js can install its own handler.
+    (() => {
+      const fail = message => {
+        if (window.FieldSimulation) return;
+        document.getElementById('loading').hidden = true;
+        document.getElementById('error-message').textContent = message;
+        document.getElementById('error').hidden = false;
+      };
+      if (location.protocol === 'file:') {
+        fail('HTML 파일을 직접 열면 브라우저가 3D 모듈을 차단합니다. 프로젝트 폴더에서 로컬 웹 서버를 실행하고 http://127.0.0.1 주소로 접속해 주세요.');
+        return;
+      }
+      document.getElementById('simulation-module').addEventListener('error', () =>
+        fail('3D 모듈을 불러오지 못했습니다. 주소와 배포된 파일을 확인한 뒤 다시 시도해 주세요.'));
+      setTimeout(() => fail('3D 화면 준비가 오래 걸리고 있습니다. 새로고침 후에도 같다면 브라우저 개발자 도구의 콘솔 오류를 확인해 주세요.'), 20000);
+    })();
+  </script>
+  <script id="simulation-module" type="module" src="simulation.js"></script>
 </body></html>

@@ -28,7 +28,7 @@ try {
   const camera=new T.OrthographicCamera(-75,75,60,-60,.1,650);
   const world=createWorld(scene),ctl=createCTL(),motion=new VehicleMotion();scene.add(ctl.root);
   const center=new T.Vector3(),desiredCenter=new T.Vector3(),viewVector=new T.Vector3(),projected=new T.Vector3();
-  let cameraMode='overview',width=1,height=1,playbackRate=1.5;
+  let cameraMode='overview',width=1,height=1,playbackRate=1;
   const orbitYaw=PHOTO.yaw,orbitElevation=PHOTO.elevation;
   let viewHalfHeight=70,targetHalfHeight=70,dragging=false,pointerStart=null,dragLast=null,dragDistance=0;
   let paused=false,qualityVisible=false,frameCount=0,fps=0,fpsTime=0,elapsed=0,previousTime=null,lastHud=0;
@@ -100,10 +100,11 @@ try {
     photo.style.width=(PHOTO.width*scale)+'px';photo.style.height=(PHOTO.height*scale)+'px';
     photo.style.left=(width/2-cp[0]*scale)+'px';photo.style.top=(height/2-cp[1]*scale)+'px';
     pm.uniforms.uScale.value=height/(viewHalfHeight*2)*renderer.getPixelRatio();
+    const activeTarget=(motion.destination&&motion.destination!=='home')?motion.destination:(motion.pending&&motion.pending!=='home')?motion.pending:motion.routeId;
     for(const l of labels){
       projected.copy(l.v).project(camera);const x=(projected.x*.5+.5)*width,y=(-projected.y*.5+.5)*height;
       l.el.style.display=(projected.z>1||projected.z< -1||x<8||x>width-8||y<8||y>height-8)?'none':'';
-      l.el.style.left=x+'px';l.el.style.top=y+'px';l.el.classList.toggle('active',l.id===motion.routeId);
+      l.el.style.left=x+'px';l.el.style.top=y+'px';l.el.classList.toggle('active',l.id===activeTarget);
     }
   }
   new ResizeObserver(resize).observe(container);resize();
@@ -118,19 +119,25 @@ try {
   renderer.domElement.addEventListener('pointermove',e=>{renderer.domElement.style.cursor=routeAtPointer(e)?'pointer':'default';});
   renderer.domElement.addEventListener('click',e=>{const id=routeAtPointer(e);if(id)selectRoute(id);});
   function setPlaybackRate(value){
-    if(![1,1.5,2].includes(Number(value)))return;
-    playbackRate=Number(value);$('playback-rate').value=String(playbackRate);
+    const rate=Number(value);
+    if(!Number.isFinite(rate))return;
+    playbackRate=Math.max(1,Math.min(10,Math.round(rate)));
+    $('playback-rate').value=String(playbackRate);
+    $('playback-rate').setAttribute('aria-valuetext',`${playbackRate}배`);
+    $('playback-value').textContent=`${playbackRate}×`;
   }
-  $('playback-rate').addEventListener('change',e=>setPlaybackRate(e.target.value));
+  $('playback-rate').addEventListener('input',e=>setPlaybackRate(e.target.value));
+  setPlaybackRate($('playback-rate').value);
 
   function updateHud(){
     $('speed').textContent=(motion.speed*3.6).toFixed(1);$('distance').textContent=Math.floor(motion.distance).toLocaleString('ko-KR');$('laps').textContent=motion.laps;
-    const state=motion.blocked?'장애물 앞 정지':motion.phase==='parked'?'주차 중':paused?'감속 · 일시 정지':motion.phase==='entry'?'시험로로 이동 중':motion.phase==='return'?'주차장으로 복귀 중':'시험 주행 중';
+    const state=motion.blocked?'장애물 앞 정지':motion.phase==='parked'?'주차 중':paused?'감속 · 일시 정지':motion.phase==='entry'?'시험로로 이동 중':motion.phase==='transfer'?'다음 노면으로 이동 중':motion.phase==='return'?'주차장으로 복귀 중':motion.turning?'방향 전환 중':'시험 주행 중';
     $('state-label').textContent=state;$('surface-label').textContent=SURFACES[motion.surface]?.material||'포장도로';$('status-dot').style.background=motion.phase==='parked'?'#9aa297':'#6e9770';
-    $('motion-note').textContent=motion.blocked?motion.blocked.name+'과의 간격을 확인해 주세요.':motion.phase==='parked'?'시험 노면을 선택해 주행을 시작하세요.':motion.pending?'현재 구간을 마친 뒤 안전하게 이동합니다.':motion.surface==='D'?'자갈 접지에 따라 차체가 반응합니다.':motion.surface==='E'?'블록의 높낮이를 따라 저속 주행합니다.':'트랙 회전과 주행 거리를 동기화합니다.';
-    $('route-hint').textContent=motion.pending?'경로 변경 대기 중':motion.routeId?`${motion.routeId} · ${SURFACES[motion.routeId].name}`:'노면을 클릭하면 장비가 출발합니다.';
-    document.querySelectorAll('[data-route]').forEach(el=>{const active=el.dataset.route===(motion.pending&&motion.pending!=='home'?motion.pending:motion.routeId);el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
-    for(const [id,path] of Object.entries(world.routeLines))path.visible=id===motion.routeId;
+    $('motion-note').textContent=motion.blocked?motion.blocked.name+'과의 간격을 확인해 주세요.':motion.phase==='parked'?'시험 노면을 선택해 주행을 시작하세요.':motion.pending?'현재 주행 구간을 마치면 최단 시간 연결로로 이동합니다.':motion.phase==='transfer'?'차고지 정차 없이 연결로를 따라 이동합니다.':motion.surface==='D'?'습지 · 자갈 구간을 지그재그로 왕복합니다.':motion.surface==='E'?'요철 구간을 지그재그로 왕복합니다.':'트랙 회전과 주행 거리를 동기화합니다.';
+    $('route-hint').textContent=motion.pending?`${motion.pending==='home'?'주차장':motion.pending+' 노면'} 이동 대기 중`:motion.destination?`${motion.destination==='home'?'주차장':motion.destination+' 노면'} 이동 중`:motion.routeId?`${motion.routeId} · ${SURFACES[motion.routeId].name}`:'노면을 클릭하면 장비가 출발합니다.';
+    const activeTarget=(motion.destination&&motion.destination!=='home')?motion.destination:(motion.pending&&motion.pending!=='home')?motion.pending:motion.routeId;
+    document.querySelectorAll('[data-route]').forEach(el=>{const active=el.dataset.route===activeTarget;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
+    for(const [id,path] of Object.entries(world.routeLines))path.visible=id===activeTarget;
     $('pause').style.background=paused?'#dce7d3':'';
     if(qualityVisible)$('quality').textContent=`${fps.toFixed(0)} fps · ${renderer.info.render.calls} draws\n${(renderer.info.render.triangles/1000).toFixed(0)}k triangles\n${motion.phase} ${motion.routeId||''} · ${motion.surface}\nx ${motion.x.toFixed(2)} z ${motion.z.toFixed(2)}\npitch ${(motion.pose.pitch*180/Math.PI).toFixed(2)}°\nL ${motion.leftDistance.toFixed(1)} R ${motion.rightDistance.toFixed(1)}`;
   }
@@ -139,12 +146,12 @@ try {
   // imports, parent DOM access, storage, navigation or real equipment writes.
   window.FieldSimulation=Object.freeze({
     selectRoute,returnToParking:()=>motion.returnHome(),setPaused:value=>{paused=!!value;motion.paused=paused;},setCamera,setPlaybackRate,
-    snapshot:()=>({equipment:'bobcat-t870',playbackRate,blocked:motion.blocked?.id||null,map:'photo-e-gate-v2',phase:motion.phase,route:motion.routeId,x:motion.x,z:motion.z,speed:motion.speed,distance:motion.distance,laps:motion.laps,leftDistance:motion.leftDistance,rightDistance:motion.rightDistance,pose:{...motion.pose},fps,source:ctl.source}),
+    snapshot:()=>({equipment:'bobcat-t870',playbackRate,blocked:motion.blocked?.id||null,map:'photo-a-uniform-source',phase:motion.phase,route:motion.routeId,destination:motion.destination,x:motion.x,z:motion.z,speed:motion.speed,distance:motion.distance,laps:motion.laps,leftDistance:motion.leftDistance,rightDistance:motion.rightDistance,pose:{...motion.pose},fps,source:ctl.source}),
   });
   const params=new URLSearchParams(location.search);if(params.has('demo')&&LOOPS[params.get('demo')])selectRoute(params.get('demo'));
   if(params.get('view')==='equipment')setCamera('follow');
   if(params.has('quality')){qualityVisible=true;$('quality').hidden=false;}
-  if(params.has('routePreview')){const id=params.get('routePreview');if(LOOPS[id]){motion.routeId=id;motion.route=LOOPS[id];motion.phase='loop';motion.s=LOOPS[id].length*.11;const p=motion.route.point(motion.s),t=motion.route.tangent(motion.s);motion.x=p.x;motion.z=p.z;motion.yaw=Math.atan2(t.x,t.z);motion.speed=SURFACES[id].speed;}}
+  if(params.has('routePreview')){const id=params.get('routePreview');if(LOOPS[id]){motion.routeId=id;motion.route=LOOPS[id];motion.phase=LOOPS[id].closed?'loop':'zigzag';motion.s=LOOPS[id].length*.11;const p=motion.route.point(motion.s),t=motion.route.tangent(motion.s);motion.x=p.x;motion.z=p.z;motion.yaw=Math.atan2(t.x,t.z);motion.speed=SURFACES[id].speed;}}
   document.addEventListener('visibilitychange',()=>{previousTime=null;});
   function frame(now){
     requestAnimationFrame(frame);if(document.hidden)return;

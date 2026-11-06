@@ -1,56 +1,113 @@
 {
-  "date": "2026-11-05",
   "passed": true,
-  "pathSamples": 11795,
-  "motionSteps": 108365,
+  "pathSamples": 15858,
+  "motionSteps": 260592,
+  "transfers": 20,
+  "projectionError": 5.084229945850415e-13,
   "cases": [
     {
-      "name": "A entry / two laps / reverse return",
-      "seconds": 246.7,
-      "laps": 2
-    },
-    {
-      "name": "A mid-entry return",
+      "name": "home→A pattern→home",
+      "laps": 1,
       "passed": true
     },
     {
-      "name": "B entry / two laps / reverse return",
-      "seconds": 188.25,
-      "laps": 2
-    },
-    {
-      "name": "B mid-entry return",
+      "name": "home→B pattern→home",
+      "laps": 1,
       "passed": true
     },
     {
-      "name": "C entry / two laps / reverse return",
-      "seconds": 175.06666666666666,
-      "laps": 2
-    },
-    {
-      "name": "C mid-entry return",
+      "name": "home→C pattern→home",
+      "laps": 1,
       "passed": true
     },
     {
-      "name": "D entry / two laps / reverse return",
-      "seconds": 209.03333333333333,
-      "laps": 2
-    },
-    {
-      "name": "D mid-entry return",
+      "name": "home→D pattern→home",
+      "laps": 1,
       "passed": true
     },
     {
-      "name": "E entry / two laps / reverse return",
-      "seconds": 211.26666666666668,
-      "laps": 2
-    },
-    {
-      "name": "E mid-entry return",
+      "name": "home→E pattern→home",
+      "laps": 1,
       "passed": true
     },
     {
-      "name": "B → parking → E",
+      "name": "A→B",
+      "passed": true
+    },
+    {
+      "name": "A→C",
+      "passed": true
+    },
+    {
+      "name": "A→D",
+      "passed": true
+    },
+    {
+      "name": "A→E",
+      "passed": true
+    },
+    {
+      "name": "B→A",
+      "passed": true
+    },
+    {
+      "name": "B→C",
+      "passed": true
+    },
+    {
+      "name": "B→D",
+      "passed": true
+    },
+    {
+      "name": "B→E",
+      "passed": true
+    },
+    {
+      "name": "C→A",
+      "passed": true
+    },
+    {
+      "name": "C→B",
+      "passed": true
+    },
+    {
+      "name": "C→D",
+      "passed": true
+    },
+    {
+      "name": "C→E",
+      "passed": true
+    },
+    {
+      "name": "D→A",
+      "passed": true
+    },
+    {
+      "name": "D→B",
+      "passed": true
+    },
+    {
+      "name": "D→C",
+      "passed": true
+    },
+    {
+      "name": "D→E",
+      "passed": true
+    },
+    {
+      "name": "E→A",
+      "passed": true
+    },
+    {
+      "name": "E→B",
+      "passed": true
+    },
+    {
+      "name": "E→C",
+      "passed": true
+    },
+    {
+      "name": "E→D",
       "passed": true
     },
     {
@@ -58,25 +115,18 @@
       "passed": true
     },
     {
-      "name": "1× playback",
-      "distance": 51.570864812452406
-    },
-    {
-      "name": "1.5× playback",
-      "distance": 72.88668888688983
-    },
-    {
-      "name": "2× playback",
-      "distance": 99.87933319415234
-    },
-    {
-      "name": "invalid office crossing stops before contact",
+      "name": "1× / 10× playback substeps",
+      "distanceAt1": 15.188261551082807,
+      "distanceAt10": 175.16519043674202,
       "passed": true
     },
     {
-      "name": "photo registration / desktop and mobile full-field framing",
+      "name": "invalid office crossing stops",
+      "passed": true
+    },
+    {
+      "name": "photo registration / full-field framing",
       "passed": true
     }
-  ],
-  "projectionError": 4.963638160851638e-13
+  ]
 }
