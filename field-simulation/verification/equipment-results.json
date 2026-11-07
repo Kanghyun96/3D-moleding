@@ -1,0 +1,26 @@
+{
+  "verifiedAt": "2026-11-07T03:08:01.673Z",
+  "storage": {
+    "passed": true,
+    "cases": [
+      "manual hours, Korean text and all card fields saved to disk",
+      "full server restart restores identical equipment information",
+      "invalid fields/hours, stale edits and cross-origin writes cannot overwrite data",
+      "concurrent edits are serialized with revision protection",
+      "corrupt data is reported rather than reset or overwritten"
+    ]
+  },
+  "panel": {
+    "passed": true,
+    "cases": [
+      "equipment selection opens a compact card; driving requires explicit surface choice",
+      "manual fields and test status survive closing and creating a fresh card",
+      "editing during an in-flight save preserves the newest hours",
+      "save failure stays visible and closing cannot silently discard edits",
+      "P slots are separate, face the arrow and parked equipment blocks overlap",
+      "all seven painted bays and the loader axis follow the two perimeter guides",
+      "new surface names, a P marker and no dashed routes or X entrance label"
+    ]
+  },
+  "browserLayoutReview": "pending: browser URL validation unavailable"
+}

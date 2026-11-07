@@ -92,7 +92,7 @@ export function createCTL() {
     pitchFrame.rotation.x=motion.pose.pitch;pitchFrame.rotation.z=motion.pose.roll;
     pitchFrame.position.y=motion.pose.heave/1.35;
     trackLeft.position.y=motion.pose.leftHeight/1.35;trackRight.position.y=motion.pose.rightHeight/1.35;
-    trackLeft.rotation.x=motion.pose.pitch;trackRight.rotation.x=motion.pose.pitch;
+    trackLeft.rotation.x=motion.pose.leftPitch??motion.pose.pitch;trackRight.rotation.x=motion.pose.rightPitch??motion.pose.pitch;
     pivotRotation(arm,pivots.arm,motion.pose.arm);
     pivotRotation(bucket,pivots.bucket,motion.pose.arm*1.4);
     for(let s=0;s<2;s++){

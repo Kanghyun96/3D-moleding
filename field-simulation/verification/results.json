@@ -1,9 +1,9 @@
 {
   "passed": true,
-  "pathSamples": 15858,
-  "motionSteps": 260592,
-  "transfers": 20,
-  "projectionError": 5.084229945850415e-13,
+  "pathSamples": 25127,
+  "motionSteps": 442385,
+  "transfers": 30,
+  "projectionError": 5.40059223387171e-13,
   "cases": [
     {
       "name": "home→A pattern→home",
@@ -31,6 +31,11 @@
       "passed": true
     },
     {
+      "name": "home→F pattern→home",
+      "laps": 1,
+      "passed": true
+    },
+    {
       "name": "A→B",
       "passed": true
     },
@@ -44,6 +49,10 @@
     },
     {
       "name": "A→E",
+      "passed": true
+    },
+    {
+      "name": "A→F",
       "passed": true
     },
     {
@@ -63,6 +72,10 @@
       "passed": true
     },
     {
+      "name": "B→F",
+      "passed": true
+    },
+    {
       "name": "C→A",
       "passed": true
     },
@@ -76,6 +89,10 @@
     },
     {
       "name": "C→E",
+      "passed": true
+    },
+    {
+      "name": "C→F",
       "passed": true
     },
     {
@@ -95,6 +112,10 @@
       "passed": true
     },
     {
+      "name": "D→F",
+      "passed": true
+    },
+    {
       "name": "E→A",
       "passed": true
     },
@@ -111,13 +132,37 @@
       "passed": true
     },
     {
+      "name": "E→F",
+      "passed": true
+    },
+    {
+      "name": "F→A",
+      "passed": true
+    },
+    {
+      "name": "F→B",
+      "passed": true
+    },
+    {
+      "name": "F→C",
+      "passed": true
+    },
+    {
+      "name": "F→D",
+      "passed": true
+    },
+    {
+      "name": "F→E",
+      "passed": true
+    },
+    {
       "name": "pause / resume",
       "passed": true
     },
     {
       "name": "1× / 10× playback substeps",
-      "distanceAt1": 15.188261551082807,
-      "distanceAt10": 175.16519043674202,
+      "distanceAt1": 16.085330473312467,
+      "distanceAt10": 186.53675995441117,
       "passed": true
     },
     {

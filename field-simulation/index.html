@@ -13,30 +13,34 @@
       <div class="scene-title"><span class="live-dot"></span>필드 시험장<span class="divider"></span><span class="simulation-tag">주행 시뮬레이션 · 사진 기반</span></div>
       <div class="view-controls" aria-label="카메라와 재생 속도"><label class="playback"><span>재생 속도</span><input id="playback-rate" type="range" min="1" max="10" step="1" value="1" aria-label="시뮬레이션 재생 속도, 1배에서 10배"><output id="playback-value" for="playback-rate">1×</output></label><button id="overview" class="active" title="시험장 전체 맞춤">전체 보기</button><button id="follow" title="장비를 가까이 보기">장비 보기</button></div>
     </header>
+    <aside class="lighting-controls" aria-label="시험장 조명"><span id="site-time">한국 시각 확인 중</span><label for="lighting-mode">조명</label><select id="lighting-mode" title="자동은 실제 한국 시각을 사용합니다. 일출·일몰은 임시 시간 기준입니다."><option value="live">자동 · 한국 시각</option><option value="day">낮 미리보기</option><option value="dusk">해질녘 미리보기</option><option value="night">밤 미리보기</option></select></aside>
     <div id="labels" aria-hidden="true"></div>
-    <aside class="equipment-card">
-      <div class="equipment-heading"><span class="equipment-icon">↗</span><div><small>COMPACT TRACK LOADER</small><h1>Bobcat <b>T-870</b></h1></div><span id="status-dot" class="status-dot"></span></div>
-      <div class="equipment-status"><span id="state-label">주차 중</span><span id="surface-label">주차장</span></div>
-      <div class="telemetry"><div><strong id="speed">0.0</strong><small>km/h</small></div><div><strong id="distance">0</strong><small>m · 주행 거리</small></div><div><strong id="laps">0</strong><small>완료 회차</small></div></div>
-      <div class="contact-status"><span></span><p id="motion-note">시험 노면을 선택해 주행을 시작하세요.</p></div>
+    <div class="map-tools"><button id="equipment-open" aria-controls="equipment-panel" aria-expanded="false">장비</button><button id="labels-toggle" aria-pressed="false">구역 이름</button></div>
+    <p id="map-hint" class="map-hint">장비를 누르면 시험 정보와 주행 메뉴가 열립니다.</p>
+    <aside id="equipment-panel" class="equipment-panel" aria-label="장비 시험 정보" hidden>
+      <header class="panel-heading"><div><small>COMPACT TRACK LOADER</small><h1 id="equipment-name">Bobcat T-870</h1></div><button id="equipment-close" class="icon-button" aria-label="장비 카드 닫기">×</button></header>
+      <div class="test-status-row"><label for="test-status">시험 상태</label><select id="test-status" disabled><option value="waiting">대기중</option><option value="running">진행중</option></select><span class="manual-note">직접 입력</span></div>
+      <form id="equipment-form">
+        <fieldset id="equipment-fields" disabled>
+          <details><summary>시험 목적 <span id="purpose-summary">미입력</span></summary><label class="field-label" for="test-purpose">시험 목적</label><textarea id="test-purpose" name="purpose" rows="3" maxlength="1200" placeholder="시험 목적을 입력하세요"></textarea></details>
+          <details><summary>진행시간 <span id="hours-summary">0 hrs</span></summary><label class="number-field" for="test-hours"><span>진행시간</span><input id="test-hours" name="testHours" type="number" min="0" max="10000000" step="any" value="0" inputmode="decimal"><span>hrs</span></label></details>
+          <details><summary>트랙 정보 <span id="tracks-summary">좌측 · 우측</span></summary><label class="field-label" for="track-left">좌측 트랙</label><input id="track-left" name="trackLeft" maxlength="240" placeholder="제품명 · 규격 등"><label class="field-label" for="track-right">우측 트랙</label><input id="track-right" name="trackRight" maxlength="240" placeholder="제품명 · 규격 등"></details>
+          <details><summary>노면 정보 <span>일반 · 자갈 · 콘크리트</span></summary><label class="number-field" for="hours-general"><span>일반노면</span><input id="hours-general" name="generalHours" type="number" min="0" max="10000000" step="any" value="0" inputmode="decimal"><span>hrs</span></label><label class="number-field" for="hours-gravel"><span>자갈노면</span><input id="hours-gravel" name="gravelHours" type="number" min="0" max="10000000" step="any" value="0" inputmode="decimal"><span>hrs</span></label><label class="number-field" for="hours-concrete"><span>콘크리트</span><input id="hours-concrete" name="concreteHours" type="number" min="0" max="10000000" step="any" value="0" inputmode="decimal"><span>hrs</span></label></details>
+        </fieldset>
+        <div class="save-row"><span id="save-status" role="status" aria-live="polite">정보를 불러오는 중</span><button id="reload-info" type="button" hidden>다시 불러오기</button><button id="save-info" type="submit" disabled>저장</button></div>
+      </form>
+      <div class="drive-actions"><button id="drive" class="primary-button" aria-expanded="false" aria-controls="route-picker">주행</button><button id="pause" hidden>일시 정지</button><button id="return">P로 복귀</button></div>
+      <section id="route-picker" class="route-picker" aria-label="주행할 노면 선택" hidden><div class="picker-heading"><b>주행할 노면</b><button id="route-cancel" type="button">취소</button></div><nav class="routes" aria-label="시험 노면 선택"><button data-route="A"><span>A</span><b>윗 흙 노면</b></button><button data-route="C"><span>C</span><b>중간 흙 노면</b></button><button data-route="B"><span>B</span><b>아래 흙 노면</b></button><button data-route="D"><span>D</span><b>습전 노면</b></button><button data-route="E"><span>E</span><b>자갈노면</b></button><button data-route="F"><span>F</span><b>콘크리트 왕복로</b></button></nav><p>지도에서 노면을 눌러 선택할 수도 있습니다.</p></section>
+      <div class="live-status"><span id="status-dot" class="status-dot"></span><span id="state-label">P 주차 중</span><span id="surface-label">주차장</span></div>
+      <div class="telemetry"><div><strong id="speed">0.0</strong><small>km/h</small></div><div><strong id="distance">0</strong><small>m</small></div><div><strong id="laps">0</strong><small>회</small></div></div><p id="motion-note" class="motion-note">주행을 눌러 시험 노면을 선택하세요.</p>
     </aside>
     <div class="north" aria-hidden="true"><span>N</span><svg width="28" height="37" viewBox="0 0 28 37"><path d="M14 2 23 30 14 24 5 30Z" fill="currentColor"/><path d="M14 2v22l9 6Z" fill="#c2c7c3"/></svg></div>
-    <footer class="bottom-bar">
-      <div class="route-intro"><span class="eyebrow">SELECT A SURFACE</span><b>시험 노면 선택</b><small id="route-hint">노면을 클릭하면 장비가 출발합니다.</small></div>
-      <nav class="routes" aria-label="시험 노면 선택">
-        <button data-route="A"><span>A</span><div><b>순환 주행로</b><small>COMPACTED SOIL</small></div></button>
-        <button data-route="B"><span>B</span><div><b>대형 선회로</b><small>TURNING COURSE</small></div></button>
-        <button data-route="C"><span>C</span><div><b>소형 선회로</b><small>SHORT COURSE</small></div></button>
-        <button data-route="D"><span>D</span><div><b>습지 · 자갈</b><small>ROUGH TERRAIN</small></div></button>
-        <button data-route="E"><span>E</span><div><b>요철 시험로</b><small>BLOCK COURSE</small></div></button>
-      </nav>
-      <div class="transport"><button id="pause" aria-label="주행 일시 정지" title="주행 일시 정지"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button><button id="return" title="주차장 복귀" aria-label="주차장 복귀"><svg viewBox="0 0 24 24"><path d="M4 10h10a6 6 0 0 1 0 12M4 10l5-5M4 10l5 5" transform="translate(0 -3)"/></svg></button></div>
-    </footer>
     <div id="loading"><span class="loader-ring"></span><b>시험장을 준비하고 있습니다</b><small>Bobcat T-870 · Field Motion</small></div>
     <div id="error" hidden><b>3D 화면을 열 수 없습니다.</b><p id="error-message"></p><button onclick="location.reload()">다시 시도</button></div>
     <div id="quality" hidden></div>
   </main>
   <script src="streamlit-bridge.js"></script>
+  <script id="simulation-module" type="module" src="simulation.js"></script>
   <script>
     // Module loading errors occur before simulation.js can install its own handler.
     (() => {
@@ -55,5 +59,4 @@
       setTimeout(() => fail('3D 화면 준비가 오래 걸리고 있습니다. 새로고침 후에도 같다면 브라우저 개발자 도구의 콘솔 오류를 확인해 주세요.'), 20000);
     })();
   </script>
-  <script id="simulation-module" type="module" src="simulation.js"></script>
 </body></html>

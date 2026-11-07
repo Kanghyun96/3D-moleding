@@ -1,5 +1,5 @@
 import { VehicleMotion } from '../motion.js';
-import { HOME, ROADS, LOOPS, planTravel, surfaceAt, Route } from '../routes.js';
+import { HOME, HOME_YAW, ROADS, LOOPS, planTravel, surfaceAt, Route } from '../routes.js';
 import { PHOTO, HOME_PHOTO, photoToWorld, worldToPhoto, checkVehiclePose, BLOCKED_POLYGONS, SURFACE_POLYGONS } from '../photo-map.js';
 import { OrthographicCamera, Vector3 } from '../vendor/three.core.js';
 
@@ -68,6 +68,7 @@ export function verify(){
     runUntil(m,v=>v.laps>=1,`${id} repeat pattern`);
     m.returnHome();runUntil(m,v=>v.phase==='parked',`${id}→home`);
     assert(Math.hypot(m.x-HOME[0],m.z-HOME[1])<.001,`${id} wrong parking point`);
+    assert(Math.abs(angleDelta(m.yaw,HOME_YAW))<.001,`${id} bucket not facing parking arrow`);
     report.cases.push({name:`home→${id} pattern→home`,laps:m.laps,passed:true});
   }
   for(const from of ids)for(const to of ids)if(from!==to){

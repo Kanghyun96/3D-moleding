@@ -1,0 +1,149 @@
+{
+  "verifiedAt": "2026-11-07T03:05:56.951Z",
+  "passed": true,
+  "cases": [
+    {
+      "name": "Seoul clock, midnight, smooth dawn/dusk, live refresh and playback independence",
+      "passed": true
+    },
+    {
+      "name": "photo-calibrated D wet/gravel zones both intersect driving route",
+      "passed": true
+    },
+    {
+      "name": "per-contact materials, steering, fixed particle pool, stop and natural expiry",
+      "emissions": {
+        "soil": [
+          "dust"
+        ],
+        "dry": [
+          "dust"
+        ],
+        "earth": [
+          "dust"
+        ],
+        "wet": [
+          "water",
+          "mud"
+        ],
+        "gravel": [
+          "dust",
+          "gravel"
+        ],
+        "blocks": [],
+        "road": []
+      },
+      "passed": true
+    },
+    {
+      "name": "overview/mobile pixel visibility, material sprite attributes and real-time lifetime at 10x",
+      "visibility": [
+        {
+          "width": 1450,
+          "height": 905,
+          "pixelSizes": {
+            "dust": 7,
+            "gravel": 2.8,
+            "water": 2.8,
+            "mud": 2.2
+          }
+        },
+        {
+          "width": 390,
+          "height": 430,
+          "pixelSizes": {
+            "dust": 7,
+            "gravel": 2.8,
+            "water": 2.8,
+            "mud": 2.2
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "bounded contact-based body pitch/roll/heave on A–E",
+      "poses": {
+        "A": {
+          "pitchDegrees": 0.3032167274825582,
+          "rollDegrees": 0.30396475769953873,
+          "heightRange": 0.010425531801052674,
+          "trackDifferenceDegrees": 0.6929131780088961
+        },
+        "B": {
+          "pitchDegrees": 0.3024932198447082,
+          "rollDegrees": 0.34768684427062346,
+          "heightRange": 0.009414778371801581,
+          "trackDifferenceDegrees": 0.7007412925292152
+        },
+        "C": {
+          "pitchDegrees": 0.28625362256052567,
+          "rollDegrees": 0.3512890966201463,
+          "heightRange": 0.010209242896562366,
+          "trackDifferenceDegrees": 0.6999973269284179
+        },
+        "D": {
+          "pitchDegrees": 4.6074244580203665,
+          "rollDegrees": 2.8629109881507,
+          "heightRange": 0.13407044073053248,
+          "trackDifferenceDegrees": 8.760709458309927
+        },
+        "E": {
+          "pitchDegrees": 4.040834697548534,
+          "rollDegrees": 3.2145064588565475,
+          "heightRange": 0.19341758343447424,
+          "trackDifferenceDegrees": 12.977081914993052
+        },
+        "F": {
+          "pitchDegrees": 0,
+          "rollDegrees": 0,
+          "heightRange": 0,
+          "trackDifferenceDegrees": 0
+        }
+      },
+      "passed": true
+    },
+    {
+      "name": "9 photo-registered roadside lights clear of driving paths, office and garage glazing",
+      "passed": true
+    },
+    {
+      "name": "subtle water ballistics/wakes and photo-textured pane-clipped building illumination",
+      "officePanes": 14,
+      "garageBays": 7,
+      "passed": true
+    },
+    {
+      "name": "broader wet-course coverage, stronger D/E jolts and visible contact wakes",
+      "oldCoverage": {
+        "covered": 271,
+        "total": 603,
+        "fraction": 0.4494195688225539
+      },
+      "newCoverage": {
+        "covered": 425,
+        "total": 603,
+        "fraction": 0.7048092868988391
+      },
+      "passed": true
+    },
+    {
+      "name": "compact grouped dust billows, rapid expansion, natural fade and bounded trail at 1x/10x",
+      "trailChecks": [
+        {
+          "playback": 1,
+          "maxCloudDistanceMetres": 3.971756741242282
+        },
+        {
+          "playback": 10,
+          "maxCloudDistanceMetres": 3.917927794381728
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "particleLimit": 320,
+  "streetLights": 9,
+  "browserVisualReview": "pending: Computer Use stopped because the current browser URL could not be verified",
+  "browserPerformanceReview": "pending"
+}

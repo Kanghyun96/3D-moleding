@@ -17,3 +17,6 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+
+# Operator-entered test information; migrate separately when adopting in Home.
+/data/

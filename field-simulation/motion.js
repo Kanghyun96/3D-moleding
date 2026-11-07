@@ -1,5 +1,5 @@
 import { checkVehiclePose } from './photo-map.js';
-import { HOME, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
+import { HOME, HOME_YAW, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
 
 const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
 const angleDelta = (a,b) => Math.atan2(Math.sin(b-a), Math.cos(b-a));
@@ -56,20 +56,21 @@ export class Spring {
 export class VehicleMotion {
   constructor() {
     this.x=HOME[0]; this.z=HOME[1]; this.y=groundHeight(this.x,this.z);
-    this.yaw=2.14;this.blocked=null; this.speed=0; this.acceleration=0; this.omega=0;
+    this.yaw=HOME_YAW;this.blocked=null; this.speed=0; this.acceleration=0; this.omega=0;
     this.route=null; this.routeId=null; this.destination=null; this.phase='parked'; this.s=0;
     this.pending=null; this.paused=false; this.turning=false; this.patternDirection=1;
     this.travelEdges=[];this.edgeIndex=0;this.activeRoad=null;
     this.distance=0; this.laps=0; this.leftDistance=0; this.rightDistance=0;
     this.pitchSpring=new Spring(2.4,.84);this.rollSpring=new Spring(2.8,.82);this.heaveSpring=new Spring(4,.85);
     this.armSpring=new Spring(3.6,.72);this.trackWidth=2.065;this.time=0;
-    this.pose={pitch:0,roll:0,heave:0,arm:0,leftHeight:0,rightHeight:0};
+    this.leftTrackSpring=new Spring(5,.86);this.rightTrackSpring=new Spring(5,.86);
+    this.pose={pitch:0,roll:0,heave:0,arm:0,leftHeight:0,rightHeight:0,leftPitch:0,rightPitch:0};
     this.events=[];
   }
   select(id) {
     if (!LOOPS[id]) return;
     this.paused=false;
-    if(this.phase==='parked') return this.depart(id);
+    if(this.phase==='parked'||this.phase==='parking') return this.depart(id);
     if(this.routeId===id && (this.phase==='loop'||this.phase==='zigzag')) {this.pending=null;return;}
     this.navigateImmediate(id);
   }
@@ -79,7 +80,7 @@ export class VehicleMotion {
   }
   returnHome() {
     this.paused=false;
-    if(this.phase==='parked')return;
+    if(this.phase==='parked'||this.phase==='parking')return;
     this.navigateImmediate('home');
   }
   navigateImmediate(target) {
@@ -89,6 +90,20 @@ export class VehicleMotion {
       const anchor=LOOPS[from].point(0), dist=Math.hypot(this.x-anchor.x,this.z-anchor.z);
       if(dist>.08) {
         let prefix=null;
+        if(from==='F'){
+          // The concrete lane wraps around a wall. Exit along that lane rather
+          // than cutting across A or joining a road from the wrong endpoint.
+          const base=LOOPS.F,at=this.patternDirection>0?this.s:base.length-this.s;
+          const backToAnchor=sliceRoute(base,at,0,'F-exit-to-anchor');
+          let exits;
+          if(isRouteClear(backToAnchor,this.yaw,nextYaw))exits=[backToAnchor];
+          else{
+            exits=[sliceRoute(this.route,this.s,this.route.length,'F-exit-continue')];
+            if(this.patternDirection>0)exits.push(base.reversed());
+          }
+          edges.unshift(...exits.map(route=>({from,to:from,route,speed:1.8,seconds:route.length/1.8})));
+          prefix='merged';
+        }
         if((from==='D'||from==='E')&&edges[0]&&(edges[0].to==='D'||edges[0].to==='E')) {
           const nextAnchor=LOOPS[edges[0].to].point(0);
           const afterYaw=edges[1]?Math.atan2(edges[1].route.tangent(0).x,edges[1].route.tangent(0).z):Math.atan2(LOOPS[edges[0].to].tangent(0).x,LOOPS[edges[0].to].tangent(0).z);
@@ -118,7 +133,12 @@ export class VehicleMotion {
       const u=this.activeRoad.from, v=this.activeRoad.to, r=this.activeRoad.route;
       const planV=planTravel(v,target);
       const remFwd=this.s<r.length-.08?sliceRoute(r,this.s,r.length,`${u}-${v}-rem`):null;
-      const edges=remFwd?[{from:u,to:v,route:remFwd,speed:this.activeRoad.speed,seconds:remFwd.length/this.activeRoad.speed},...planV.edges]:[...planV.edges];
+      const remainingExits=[];
+      if(u==='F'&&v==='F')for(const road of this.travelEdges.slice(this.edgeIndex+1)){
+        if(road.from!=='F'||road.to!=='F')break;
+        remainingExits.push(road);
+      }
+      const edges=[...(remFwd?[{from:u,to:v,route:remFwd,speed:this.activeRoad.speed,seconds:remFwd.length/this.activeRoad.speed}]:[]),...remainingExits,...planV.edges];
       this.destination=target;this.pending=null;this.travelEdges=edges;this.edgeIndex=0;
       this.phase=target==='home'?'return':'transfer';
       this.events.push({type:'navigate',from:v,to:target,nodes:planV.nodes,estimatedSeconds:planV.seconds});
@@ -143,9 +163,9 @@ export class VehicleMotion {
   arrive(node) {
     this.activeRoad=null;this.travelEdges=[];this.edgeIndex=0;this.destination=null;
     if(node==='home') {
-      this.phase='parked';this.route=null;this.routeId=null;this.s=0;
+      this.phase='parking';this.route=null;this.routeId=null;this.s=0;this.turning=true;
       this.x=HOME[0];this.z=HOME[1];this.speed=0;this.acceleration=0;this.omega=0;
-      this.events.push({type:'parked'});return;
+      return;
     }
     this.routeId=node;this.phase=LOOPS[node].closed?'loop':'zigzag';this.patternDirection=1;
     this.setRoute(LOOPS[node]);this.events.push({type:'mission-start',route:node});
@@ -170,6 +190,7 @@ export class VehicleMotion {
     dt=clamp(dt,0,.04);this.time+=dt;
     const before={x:this.x,z:this.z,yaw:this.yaw,s:this.s,phase:this.phase,route:this.route,laps:this.laps,routeId:this.routeId,pending:this.pending,destination:this.destination,travelEdges:this.travelEdges,edgeIndex:this.edgeIndex,activeRoad:this.activeRoad,turning:this.turning,patternDirection:this.patternDirection,events:this.events.length};
     let desired=0, turnTarget=this.yaw;
+    if(this.phase==='parking'){turnTarget=HOME_YAW;this.turning=true;}
     if(this.route) {
       const t=this.route.tangent(this.s);
       turnTarget=Math.atan2(t.x,t.z);
@@ -192,9 +213,10 @@ export class VehicleMotion {
     const delta=angleDelta(this.yaw,turnTarget);
     const maxTurn=1.45;
     this.omega += (clamp(delta*6,-maxTurn,maxTurn)-this.omega)*(1-Math.exp(-dt*9));
-    if(!this.route || this.paused)this.omega*=Math.exp(-dt*7);
+    if((!this.route&&this.phase!=='parking') || this.paused)this.omega*=Math.exp(-dt*7);
     this.yaw+=this.omega*dt;
     if(this.turning&&Math.abs(angleDelta(this.yaw,turnTarget))<.035){this.turning=false;this.omega=0;}
+    if(this.phase==='parking'&&!this.turning){this.phase='parked';this.yaw=HOME_YAW;this.events.push({type:'parked'});}
     let travel=(oldSpeed+this.speed)*.5*dt;
     if(this.route) {
       this.s+=travel;
@@ -231,6 +253,10 @@ export class VehicleMotion {
     return this;
   }
   updateContact(dt) {
+    const rough=['D','E'].includes(surfaceAt(this.x,this.z));
+    this.pitchSpring.frequency=rough?3.2:2.4;this.pitchSpring.damping=rough?.62:.84;
+    this.rollSpring.frequency=rough?3.5:2.8;this.rollSpring.damping=rough?.65:.82;
+    this.heaveSpring.frequency=rough?4.6:4;this.heaveSpring.damping=rough?.61:.85;
     const sy=Math.sin(this.yaw), cy=Math.cos(this.yaw),half=this.trackWidth*.5;
     const contact=(side,fore)=>groundHeight(this.x+cy*side+sy*fore,this.z-sy*side+cy*fore);
     const lf=contact(-half,1.05),lr=contact(-half,-1.05),rf=contact(half,1.05),rr=contact(half,-1.05);
@@ -244,6 +270,8 @@ export class VehicleMotion {
     this.pose.heave=this.heaveSpring.step(this.y,dt)-this.y;
     this.pose.arm=this.armSpring.step(-this.pitchSpring.velocity*.012-this.acceleration*.005,dt);
     this.pose.leftHeight=left-this.y;this.pose.rightHeight=right-this.y;
+    this.pose.leftPitch=this.leftTrackSpring.step(-Math.atan2(lf-lr,2.1),dt);
+    this.pose.rightPitch=this.rightTrackSpring.step(-Math.atan2(rf-rr,2.1),dt);
     this.surface=surfaceAt(this.x,this.z);
   }
 }
