@@ -7,7 +7,7 @@ export function createEquipmentStore(file){
   async function load(){
     let data;
     try{data=JSON.parse(await readFile(file,'utf8'));}
-    catch(error){if(error.code==='ENOENT')return{schemaVersion:EQUIPMENT_SCHEMA_VERSION,equipment:{[initialEquipment().id]:initialEquipment()}};throw new Error('저장된 시험 정보를 읽지 못했습니다.');}
+    catch(error){if(error.code==='ENOENT')return{schemaVersion:EQUIPMENT_SCHEMA_VERSION,equipment:{'bobcat-t870':initialEquipment('bobcat-t870'),'dx-55':initialEquipment('dx-55')}};throw new Error('저장된 시험 정보를 읽지 못했습니다.');}
     if(!data||data.schemaVersion!==EQUIPMENT_SCHEMA_VERSION||!data.equipment||typeof data.equipment!=='object'||Array.isArray(data.equipment))throw new Error('지원하지 않는 시험 정보 저장 형식입니다.');
     for(const[id,record]of Object.entries(data.equipment)){
       if(!record||record.id!==id||typeof record.name!=='string'||typeof record.parkingSlotId!=='string'||!Number.isSafeInteger(record.revision)||record.revision<0)throw new Error('저장된 장비 정보가 올바르지 않습니다.');

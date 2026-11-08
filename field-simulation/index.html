@@ -18,7 +18,19 @@
     <div class="map-tools"><button id="equipment-open" aria-controls="equipment-panel" aria-expanded="false">장비</button><button id="labels-toggle" aria-pressed="false">구역 이름</button></div>
     <p id="map-hint" class="map-hint">장비를 누르면 시험 정보와 주행 메뉴가 열립니다.</p>
     <aside id="equipment-panel" class="equipment-panel" aria-label="장비 시험 정보" hidden>
-      <header class="panel-heading"><div><small>COMPACT TRACK LOADER</small><h1 id="equipment-name">Bobcat T-870</h1></div><button id="equipment-close" class="icon-button" aria-label="장비 카드 닫기">×</button></header>
+      <header class="panel-heading">
+        <div style="flex:1">
+          <small id="equipment-type-label">COMPACT TRACK LOADER</small>
+          <div class="equipment-selector-wrap">
+            <select id="equipment-select" class="equipment-select" aria-label="시험 대상 장비 선택">
+              <option value="bobcat-t870">Bobcat T-870 (CTL)</option>
+              <option value="dx-55">Doosan DX-55 (굴착기)</option>
+            </select>
+          </div>
+          <h1 id="equipment-name" style="display:none">Bobcat T-870</h1>
+        </div>
+        <button id="equipment-close" class="icon-button" aria-label="장비 카드 닫기">×</button>
+      </header>
       <div class="test-status-row"><label for="test-status">시험 상태</label><select id="test-status" disabled><option value="waiting">대기중</option><option value="running">진행중</option></select><span class="manual-note">직접 입력</span></div>
       <form id="equipment-form">
         <fieldset id="equipment-fields" disabled>
@@ -35,7 +47,7 @@
       <div class="telemetry"><div><strong id="speed">0.0</strong><small>km/h</small></div><div><strong id="distance">0</strong><small>m</small></div><div><strong id="laps">0</strong><small>회</small></div></div><p id="motion-note" class="motion-note">주행을 눌러 시험 노면을 선택하세요.</p>
     </aside>
     <div class="north" aria-hidden="true"><span>N</span><svg width="28" height="37" viewBox="0 0 28 37"><path d="M14 2 23 30 14 24 5 30Z" fill="currentColor"/><path d="M14 2v22l9 6Z" fill="#c2c7c3"/></svg></div>
-    <div id="loading"><span class="loader-ring"></span><b>시험장을 준비하고 있습니다</b><small>Bobcat T-870 · Field Motion</small></div>
+    <div id="loading"><span class="loader-ring"></span><b>시험장을 준비하고 있습니다</b><small>Bobcat T-870 · Doosan DX-55 · Field Motion</small></div>
     <div id="error" hidden><b>3D 화면을 열 수 없습니다.</b><p id="error-message"></p><button onclick="location.reload()">다시 시도</button></div>
     <div id="quality" hidden></div>
   </main>

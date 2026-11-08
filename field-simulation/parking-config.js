@@ -11,3 +11,19 @@ export const PARKING_SLOTS=['P03','P01','P02','P04','P05','P06','P07'].map((id,i
   id,p:[610-index*24,61+index*24*PERIMETER_ROW[1]/-PERIMETER_ROW[0]],direction:PARKING_DIRECTION,
 }));
 export const DEFAULT_EQUIPMENT=Object.freeze({id:DEFAULT_EQUIPMENT_ID,name:'Bobcat T-870',parkingSlotId:DEFAULT_PARKING_SLOT});
+export const EQUIPMENTS=Object.freeze({
+  'bobcat-t870': Object.freeze({
+    id: 'bobcat-t870',
+    name: 'Bobcat T-870',
+    type: 'COMPACT TRACK LOADER',
+    parkingSlotId: 'P03',
+    modelType: 'ctl',
+  }),
+  'dx-55': Object.freeze({
+    id: 'dx-55',
+    name: 'Doosan DX-55',
+    type: 'COMPACT EXCAVATOR',
+    parkingSlotId: 'P01',
+    modelType: 'dx55',
+  }),
+});

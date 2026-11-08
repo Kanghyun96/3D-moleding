@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackVision — DX-55 Excavator 3D Studio Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121820; color: #f1f5f9; }
+    .studio-layout { display: grid; grid-template-columns: 1fr 340px; width: 100vw; height: 100vh; }
+    #canvas-container { position: relative; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, #2a3441 0%, #0d1217 100%); }
+    #c { width: 100%; height: 100%; display: block; }
+    .control-panel { background: rgba(22, 29, 39, 0.96); border-left: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    h1 { font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .badge { background: #ea580c; color: #fff; font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; font-size: 0.85rem; }
+    .card h2 { font-size: 0.85rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    .slider-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .slider-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; }
+    input[type=range] { width: 100%; accent-color: #ea580c; cursor: pointer; }
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+    button { flex: 1; padding: 8px 12px; background: #334155; color: #fff; border: 0; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    button:hover { background: #475569; }
+    button.primary { background: #ea580c; }
+    button.primary:hover { background: #f97316; }
+    .loading-overlay { position: absolute; inset: 0; background: rgba(18, 24, 32, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 10; font-size: 0.95rem; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255, 255, 255, 0.1); border-top-color: #ea580c; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stat-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.8rem; }
+    .stat-item { background: rgba(0,0,0,0.25); padding: 6px 8px; border-radius: 4px; }
+    .stat-label { color: #64748b; font-size: 0.72rem; }
+    .stat-value { color: #f1f5f9; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="studio-layout">
+    <div id="canvas-container">
+      <canvas id="c"></canvas>
+      <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <span id="loading-text">DX-55 3D 모델(86MB) 로딩 중…</span>
+      </div>
+    </div>
+    <aside class="control-panel">
+      <div>
+        <h1>Doosan DX-55 <span class="badge">Excavator</span></h1>
+        <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">5.5톤급 소형 굴착기 3D 모델 튜닝 스튜디오</p>
+      </div>
+
+      <div class="card">
+        <h2>모델 조정 (Transform)</h2>
+        <div class="slider-row">
+          <div class="slider-header"><span>스케일 (Scale)</span><span id="val-scale">1.95</span></div>
+          <input id="in-scale" type="range" min="1.0" max="3.0" step="0.05" value="1.95">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Y 회전 (Yaw)</span><span id="val-yaw">90°</span></div>
+          <input id="in-yaw" type="range" min="-180" max="180" step="15" value="90">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>바닥 오프셋 (Ground Y)</span><span id="val-y">0.00m</span></div>
+          <input id="in-y" type="range" min="-0.5" max="0.5" step="0.01" value="0.00">
+        </div>
+        <div class="btn-row">
+          <button id="btn-forward-flip">전방 방향 180° 반전</button>
+          <button id="btn-reset">초기화</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>비교 및 시각화</h2>
+        <div class="slider-row">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="chk-grid" checked> 바닥 그리드 (1m 단위)
+          </label>
+        </div>
+        <div class="slider-row">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="chk-axes" checked> 좌표축 표시 (X:빨강, Y:초록, Z:파랑)
+          </label>
+        </div>
+        <div class="slider-row">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="chk-bobcat-box" checked> Bobcat T-870 크기 박스 비교
+          </label>
+        </div>
+        <div class="slider-row">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="chk-auto-rotate"> 자동 회전
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>모델 제원 (실시간)</h2>
+        <div class="stat-list">
+          <div class="stat-item"><div class="stat-label">전폭 (Width)</div><div id="stat-w" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">전고 (Height)</div><div id="stat-h" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">전장 (Length)</div><div id="stat-l" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">폴리곤 (Tris)</div><div class="stat-value">2,296k</div></div>
+        </div>
+      </div>
+
+      <div>
+        <a href="index.html" style="display:block; text-align:center; padding:10px; background:#1e293b; color:#38bdf8; border:1px solid #0284c7; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">← 필드 시험장 시뮬레이션으로 이동</a>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module">
+    import * as THREE from './field-simulation/vendor/three.module.js';
+    import { GLTFLoader } from './field-simulation/vendor/GLTFLoader.js';
+
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#141c26');
+
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+    camera.position.set(6, 4, 8);
+
+    // Orbit controls manual implementation
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+    let spherical = { radius: 10, theta: Math.PI / 4, phi: Math.PI / 3 };
+    const target = new THREE.Vector3(0, 1.2, 0);
+
+    function updateCamera() {
+      camera.position.x = target.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+      camera.position.y = target.y + spherical.radius * Math.cos(spherical.phi);
+      camera.position.z = target.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+      camera.lookAt(target);
+    }
+    updateCamera();
+
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      prevMouse = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('pointerup', () => { isDragging = false; });
+    window.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - prevMouse.x;
+      const dy = e.clientY - prevMouse.y;
+      prevMouse = { x: e.clientX, y: e.clientY };
+      spherical.theta -= dx * 0.008;
+      spherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.02, spherical.phi - dy * 0.008));
+      updateCamera();
+    });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      spherical.radius = Math.max(2, Math.min(30, spherical.radius + e.deltaY * 0.01));
+      updateCamera();
+    }, { passive: false });
+
+    // Lights
+    const hemi = new THREE.HemisphereLight('#f1f5f9', '#475569', 1.8);
+    scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight('#fff8e7', 2.8);
+    sun.position.set(8, 14, 10);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -6;
+    sun.shadow.camera.right = 6;
+    sun.shadow.camera.top = 6;
+    sun.shadow.camera.bottom = -6;
+    sun.shadow.bias = -0.0005;
+    scene.add(sun);
+
+    const fill = new THREE.DirectionalLight('#94a3b8', 1.0);
+    fill.position.set(-8, 6, -6);
+    scene.add(fill);
+
+    // Grid & Ground
+    const grid = new THREE.GridHelper(20, 20, '#ea580c', '#334155');
+    grid.position.y = 0;
+    scene.add(grid);
+
+    const axes = new THREE.AxesHelper(3);
+    axes.position.y = 0.01;
+    scene.add(axes);
+
+    // Ground plane for shadow
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(30, 30),
+      new THREE.ShadowMaterial({ opacity: 0.35 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Bobcat comparison box (W: 2.67, H: 2.21, L: 4.20)
+    const bobcatBox = new THREE.Box3Helper(
+      new THREE.Box3(new THREE.Vector3(-1.33, 0, -2.1), new THREE.Vector3(1.33, 2.21, 2.1)),
+      new THREE.Color('#38bdf8')
+    );
+    scene.add(bobcatBox);
+
+    // Model root
+    const modelRoot = new THREE.Group();
+    scene.add(modelRoot);
+
+    let rawMesh = null;
+    let modelScale = 1.95;
+    let yawDeg = 90;
+    let groundYOffset = 0.0;
+
+    const loader = new GLTFLoader();
+    const candidateUrls = [
+      'field-simulation/assets/DX-55.glb',
+      'picture/DX-55.glb',
+      '/field-simulation/assets/DX-55.glb',
+      '/picture/DX-55.glb',
+    ];
+
+    function tryLoad(index = 0) {
+      if (index >= candidateUrls.length) {
+        document.getElementById('loading-text').textContent = 'DX-55 3D 모델을 불러오지 못했습니다.';
+        return;
+      }
+      const url = candidateUrls[index];
+      loader.load(url, (gltf) => {
+        document.getElementById('loading').style.display = 'none';
+        rawMesh = gltf.scene;
+
+        rawMesh.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              child.material.roughness = Math.max(child.material.roughness, 0.45);
+              child.material.metalness = Math.min(child.material.metalness, 0.7);
+              if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
+            }
+          }
+        });
+
+        modelRoot.add(rawMesh);
+        applyTransform();
+      }, (progress) => {
+        if (progress.total) {
+          const pct = Math.round((progress.loaded / progress.total) * 100);
+          document.getElementById('loading-text').textContent = `DX-55 3D 모델 로딩 중… ${pct}%`;
+        }
+      }, (error) => {
+        console.warn(`Failed loading from ${url}, trying next...`, error);
+        tryLoad(index + 1);
+      });
+    }
+    tryLoad(0);
+
+    function applyTransform() {
+      if (!rawMesh) return;
+      modelRoot.scale.setScalar(modelScale);
+      modelRoot.rotation.y = (yawDeg * Math.PI) / 180;
+      // In rawMesh, Y min is -0.7453. Raise by 0.7453 so bottom sits on Y=0
+      rawMesh.position.y = 0.7453 + groundYOffset;
+
+      const box = new THREE.Box3().setFromObject(modelRoot);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      document.getElementById('stat-w').textContent = size.x.toFixed(2) + 'm';
+      document.getElementById('stat-h').textContent = size.y.toFixed(2) + 'm';
+      document.getElementById('stat-l').textContent = size.z.toFixed(2) + 'm';
+    }
+
+    // UI events
+    document.getElementById('in-scale').addEventListener('input', e => {
+      modelScale = parseFloat(e.target.value);
+      document.getElementById('val-scale').textContent = modelScale.toFixed(2);
+      applyTransform();
+    });
+    document.getElementById('in-yaw').addEventListener('input', e => {
+      yawDeg = parseFloat(e.target.value);
+      document.getElementById('val-yaw').textContent = yawDeg + '°';
+      applyTransform();
+    });
+    document.getElementById('in-y').addEventListener('input', e => {
+      groundYOffset = parseFloat(e.target.value);
+      document.getElementById('val-y').textContent = (groundYOffset >= 0 ? '+' : '') + groundYOffset.toFixed(2) + 'm';
+      applyTransform();
+    });
+    document.getElementById('btn-forward-flip').addEventListener('click', () => {
+      yawDeg = (yawDeg + 180) % 360;
+      if (yawDeg > 180) yawDeg -= 360;
+      document.getElementById('in-yaw').value = yawDeg;
+      document.getElementById('val-yaw').textContent = yawDeg + '°';
+      applyTransform();
+    });
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      modelScale = 1.95; yawDeg = 90; groundYOffset = 0.0;
+      document.getElementById('in-scale').value = 1.95; document.getElementById('val-scale').textContent = '1.95';
+      document.getElementById('in-yaw').value = 90; document.getElementById('val-yaw').textContent = '90°';
+      document.getElementById('in-y').value = 0.0; document.getElementById('val-y').textContent = '0.00m';
+      applyTransform();
+    });
+
+    document.getElementById('chk-grid').addEventListener('change', e => grid.visible = e.target.checked);
+    document.getElementById('chk-axes').addEventListener('change', e => axes.visible = e.target.checked);
+    document.getElementById('chk-bobcat-box').addEventListener('change', e => bobcatBox.visible = e.target.checked);
+
+    function resize() {
+      const container = document.getElementById('canvas-container');
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (document.getElementById('chk-auto-rotate').checked && !isDragging) {
+        spherical.theta += 0.005;
+        updateCamera();
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

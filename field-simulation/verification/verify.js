@@ -1,5 +1,5 @@
 import { VehicleMotion } from '../motion.js';
-import { HOME, HOME_YAW, ROADS, LOOPS, planTravel, surfaceAt, Route } from '../routes.js';
+import { HOME, HOME_YAW, ROADS, LOOPS, planTravel, surfaceAt, Route, P01_PHOTO } from '../routes.js';
 import { PHOTO, HOME_PHOTO, photoToWorld, worldToPhoto, checkVehiclePose, BLOCKED_POLYGONS, SURFACE_POLYGONS } from '../photo-map.js';
 import { OrthographicCamera, Vector3 } from '../vendor/three.core.js';
 
@@ -29,8 +29,8 @@ export function verify(){
   const photo=p=>worldToPhoto(p.x,p.z);
   for(const road of ROADS){
     const first=road.route.point(0),last=road.route.point(road.route.length);
-    const start=road.from==='home'?HOME_PHOTO:road.from==='gate'?[242,272]:photo(LOOPS[road.from].point(0));
-    const end=road.to==='home'?HOME_PHOTO:road.to==='gate'?[242,272]:photo(LOOPS[road.to].point(0));
+    const start=road.from==='home'?HOME_PHOTO:road.from==='home_P01'?P01_PHOTO:road.from==='gate'?[242,272]:photo(LOOPS[road.from].point(0));
+    const end=road.to==='home'?HOME_PHOTO:road.to==='home_P01'?P01_PHOTO:road.to==='gate'?[242,272]:photo(LOOPS[road.to].point(0));
     assert(Math.hypot(...photo(first).map((v,i)=>v-start[i]))<.01,`${road.from} road start seam`);
     assert(Math.hypot(...photo(last).map((v,i)=>v-end[i]))<.01,`${road.to} road end seam`);
   }

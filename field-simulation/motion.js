@@ -1,5 +1,5 @@
 import { checkVehiclePose } from './photo-map.js';
-import { HOME, HOME_YAW, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
+import { HOME, HOME_YAW, P01_HOME, P01_YAW, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
 
 const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
 const angleDelta = (a,b) => Math.atan2(Math.sin(b-a), Math.cos(b-a));
@@ -54,10 +54,15 @@ export class Spring {
 }
 
 export class VehicleMotion {
-  constructor() {
-    this.x=HOME[0]; this.z=HOME[1]; this.y=groundHeight(this.x,this.z);
-    this.yaw=HOME_YAW;this.blocked=null; this.speed=0; this.acceleration=0; this.omega=0;
-    this.route=null; this.routeId=null; this.destination=null; this.phase='parked'; this.s=0;
+  constructor({ slotId = 'P03' } = {}) {
+    this.slotId = slotId;
+    this.homeNode = slotId === 'P01' ? 'home_P01' : 'home';
+    const isP01 = slotId === 'P01';
+    this.homePos = isP01 ? P01_HOME : HOME;
+    this.homeYaw = isP01 ? P01_YAW : HOME_YAW;
+    this.x = this.homePos[0]; this.z = this.homePos[1]; this.y = groundHeight(this.x, this.z);
+    this.yaw = this.homeYaw; this.blocked = null; this.speed = 0; this.acceleration = 0; this.omega = 0;
+    this.route = null; this.routeId = null; this.destination = null; this.phase = 'parked'; this.s = 0;
     this.pending=null; this.paused=false; this.turning=false; this.patternDirection=1;
     this.travelEdges=[];this.edgeIndex=0;this.activeRoad=null;
     this.distance=0; this.laps=0; this.leftDistance=0; this.rightDistance=0;
@@ -75,17 +80,18 @@ export class VehicleMotion {
     this.navigateImmediate(id);
   }
   depart(id) {
-    this.routeId=id;this.beginTravel('home',id);
+    this.routeId=id;this.beginTravel(this.homeNode,id);
     this.events.push({type:'depart',route:id});
   }
   returnHome() {
     this.paused=false;
     if(this.phase==='parked'||this.phase==='parking')return;
-    this.navigateImmediate('home');
+    this.navigateImmediate(this.homeNode);
   }
   navigateImmediate(target) {
+    if(target==='home')target=this.homeNode;
     if(this.phase==='loop'||this.phase==='zigzag') {
-      const from=this.routeId, plan=planTravel(from,target), edges=[...plan.edges];
+      const from=this.routeId, plan=planTravel(from,target,this.slotId), edges=[...plan.edges];
       const nextYaw=edges[0]?Math.atan2(edges[0].route.tangent(0).x,edges[0].route.tangent(0).z):null;
       const anchor=LOOPS[from].point(0), dist=Math.hypot(this.x-anchor.x,this.z-anchor.z);
       if(dist>.08) {
@@ -153,18 +159,19 @@ export class VehicleMotion {
     if(this.turning){this.speed=0;this.acceleration=0;}
   }
   beginTravel(from,to) {
-    const plan=planTravel(from,to);
+    const plan=planTravel(from,to,this.slotId);
     this.destination=to;this.pending=null;this.travelEdges=plan.edges;this.edgeIndex=0;
-    this.phase=to==='home'?'return':from==='home'?'entry':'transfer';
+    const isHome=n=>n==='home'||n==='home_P01'||n===this.homeNode;
+    this.phase=isHome(to)?'return':isHome(from)?'entry':'transfer';
     this.events.push({type:'navigate',from,to,nodes:plan.nodes,estimatedSeconds:plan.seconds});
     if(!plan.edges.length){this.arrive(to);return;}
     this.activeRoad=plan.edges[0];this.setRoute(this.activeRoad.route);
   }
   arrive(node) {
     this.activeRoad=null;this.travelEdges=[];this.edgeIndex=0;this.destination=null;
-    if(node==='home') {
+    if(node==='home'||node===this.homeNode||node==='home_P01') {
       this.phase='parking';this.route=null;this.routeId=null;this.s=0;this.turning=true;
-      this.x=HOME[0];this.z=HOME[1];this.speed=0;this.acceleration=0;this.omega=0;
+      this.x=this.homePos[0];this.z=this.homePos[1];this.speed=0;this.acceleration=0;this.omega=0;
       return;
     }
     this.routeId=node;this.phase=LOOPS[node].closed?'loop':'zigzag';this.patternDirection=1;
@@ -190,33 +197,43 @@ export class VehicleMotion {
     dt=clamp(dt,0,.04);this.time+=dt;
     const before={x:this.x,z:this.z,yaw:this.yaw,s:this.s,phase:this.phase,route:this.route,laps:this.laps,routeId:this.routeId,pending:this.pending,destination:this.destination,travelEdges:this.travelEdges,edgeIndex:this.edgeIndex,activeRoad:this.activeRoad,turning:this.turning,patternDirection:this.patternDirection,events:this.events.length};
     let desired=0, turnTarget=this.yaw;
-    if(this.phase==='parking'){turnTarget=HOME_YAW;this.turning=true;}
+    if(this.phase==='parking'){turnTarget=this.homeYaw;this.turning=true;}
     if(this.route) {
-      const t=this.route.tangent(this.s);
+      // Smooth lookahead steering for fluid, natural turns without jerky stopping
+      const lookahead=Math.max(0.4, Math.min(1.2, this.speed * 0.55));
+      const lookS=this.phase==='loop'?this.s+lookahead:Math.min(this.s+lookahead, this.route.length);
+      const t=this.route.tangent(lookS);
       turnTarget=Math.atan2(t.x,t.z);
       const headingError=Math.abs(angleDelta(this.yaw,turnTarget));
-      if(headingError>1.0)this.turning=true;
+
+      // Only enter in-place pivot turn for extreme hairpin turns (>110 deg) when almost stopped
+      if(headingError>1.92 && this.speed<0.15) this.turning=true;
+
       const kind=surfaceAt(this.x,this.z), surface=SURFACES[kind];
       const cruise=this.phase==='loop'||this.phase==='zigzag'?SURFACES[this.routeId].speed:this.activeRoad?.speed||(surface?.speed||1.85);
       const curvature=Math.abs(this.route.curvature(this.s+Math.max(.5,this.speed)));
       desired=Math.min(cruise, Math.sqrt(.7/Math.max(.03,curvature)));
       if(this.phase!=='loop') desired=Math.min(desired,Math.sqrt(Math.max(0,2*.58*(this.route.length-this.s))));
-      if(headingError>.28) desired*=Math.max(0,1-(headingError-.28)/.65);
+
+      // Smooth deceleration during turns while maintaining continuous forward motion
+      if(headingError>.18) desired*=Math.max(0.38, 1-(headingError-.18)*0.45);
       if(this.paused||this.turning)desired=0;
     }
     const oldSpeed=this.speed;
-    const targetA=clamp((desired-this.speed)*2.8,-1.35,.95);
-    this.acceleration += (targetA-this.acceleration)*(1-Math.exp(-dt*7));
+    const targetA=clamp((desired-this.speed)*2.4,-1.25,.85);
+    this.acceleration += (targetA-this.acceleration)*(1-Math.exp(-dt*6));
     this.speed=Math.max(0,this.speed+this.acceleration*dt);
     if(this.turning){this.speed=0;this.acceleration=0;}
     if(desired===0 && this.speed<.008)this.speed=0;
+
     const delta=angleDelta(this.yaw,turnTarget);
-    const maxTurn=1.45;
-    this.omega += (clamp(delta*6,-maxTurn,maxTurn)-this.omega)*(1-Math.exp(-dt*9));
-    if((!this.route&&this.phase!=='parking') || this.paused)this.omega*=Math.exp(-dt*7);
+    const maxTurn=this.turning?1.4:1.75;
+    const steerResponsiveness=this.turning?5.0:7.5;
+    this.omega += (clamp(delta*steerResponsiveness,-maxTurn,maxTurn)-this.omega)*(1-Math.exp(-dt*8));
+    if((!this.route&&this.phase!=='parking') || this.paused)this.omega*=Math.exp(-dt*6);
     this.yaw+=this.omega*dt;
-    if(this.turning&&Math.abs(angleDelta(this.yaw,turnTarget))<.035){this.turning=false;this.omega=0;}
-    if(this.phase==='parking'&&!this.turning){this.phase='parked';this.yaw=HOME_YAW;this.events.push({type:'parked'});}
+    if(this.turning&&Math.abs(angleDelta(this.yaw,turnTarget))<.045){this.turning=false;this.omega=0;}
+    if(this.phase==='parking'&&!this.turning){this.phase='parked';this.yaw=this.homeYaw;this.events.push({type:'parked'});}
     let travel=(oldSpeed+this.speed)*.5*dt;
     if(this.route) {
       this.s+=travel;

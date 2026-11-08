@@ -12,6 +12,7 @@ const mime = {
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.json': 'application/json; charset=utf-8',
+  '.glb': 'model/gltf-binary',
 };
 
 const json=(response,status,value)=>response.writeHead(status,{'Content-Type':mime['.json'],'Cache-Control':'no-store'}).end(JSON.stringify(value));
@@ -55,7 +56,11 @@ return createServer(async (request, response) => {
   try {
     if ((await stat(file)).isDirectory())file=resolve(file,'index.html');
     const content=await readFile(file);
-    response.writeHead(200, { 'Content-Type': mime[extname(file).toLowerCase()] || 'application/octet-stream','Cache-Control':'no-store' });
+    response.writeHead(200, {
+      'Content-Type': mime[extname(file).toLowerCase()] || 'application/octet-stream',
+      'Content-Length': content.length,
+      'Cache-Control': 'no-store'
+    });
     response.end(request.method==='HEAD'?undefined:content);
   } catch {
     response.writeHead(404).end('Not found');

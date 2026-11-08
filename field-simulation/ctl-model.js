@@ -15,6 +15,41 @@ function trackPoint(distance) {
 
 function texture(canvas){const t=new T.CanvasTexture(canvas);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;return t;}
 
+function createHeadlightFlareTexture(){
+  if(typeof document==='undefined')return null;
+  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,128,128);
+  const grad=ctx.createRadialGradient(64,64,3,64,64,62);
+  grad.addColorStop(0,'rgba(255,255,255,1.0)');
+  grad.addColorStop(0.18,'rgba(255,250,225,0.92)');
+  grad.addColorStop(0.38,'rgba(255,225,145,0.45)');
+  grad.addColorStop(0.70,'rgba(255,195,85,0.12)');
+  grad.addColorStop(1.0,'rgba(255,170,40,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.arc(64,64,62,0,Math.PI*2);
+  ctx.fill();
+  const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;return tex;
+}
+
+function createHeadlightPoolTexture(){
+  if(typeof document==='undefined')return null;
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,256,256);
+  // Wide, soft forward beam covering the entire front width of the bucket
+  const grad=ctx.createRadialGradient(128,190,15,128,130,120);
+  grad.addColorStop(0,'rgba(255,246,205,0.76)');
+  grad.addColorStop(0.32,'rgba(255,234,165,0.46)');
+  grad.addColorStop(0.62,'rgba(255,215,130,0.18)');
+  grad.addColorStop(0.85,'rgba(240,195,100,0.05)');
+  grad.addColorStop(1.0,'rgba(200,170,80,0)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.ellipse(128,135,118,105,0,0,Math.PI*2);
+  ctx.fill();
+  const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;return tex;
+}
+
 export function createCTL() {
   const root=new T.Group();root.name='Bobcat T-870';root.scale.setScalar(1.35);
   const body=new T.Group(),trackLeft=new T.Group(),trackRight=new T.Group(),arm=new T.Group(),bucket=new T.Group();
@@ -73,20 +108,66 @@ export function createCTL() {
     const m=new T.InstancedMesh(treadGeo,treadMaterial,56);m.instanceMatrix.setUsage(T.DynamicDrawUsage);m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;
     groups[side<0?'trackLeft':'trackRight'].add(m);treadMeshes.push(m);
   }
-  const lampMaterial=new T.MeshStandardMaterial({color:'#fff6d5',emissive:'#ffe5ab',emissiveIntensity:.7,roughness:.2});
+  const lampMaterial=new T.MeshStandardMaterial({color:'#ffffff',emissive:'#fff6dd',emissiveIntensity:.8,roughness:.15});
   for(const x of [-.32,.32]){const lamp=new T.Mesh(new T.BoxGeometry(.12,.06,.025),lampMaterial);lamp.position.set(x,1.54,.495);body.add(lamp);}
   const beacon=new T.Mesh(new T.CylinderGeometry(.036,.05,.07,12),new T.MeshStandardMaterial({color:'#dba154',emissive:'#bd6b1f',emissiveIntensity:.7,roughness:.3}));
   beacon.position.set(.32,1.73,-.25);body.add(beacon);
-  // Mechanical details read clearly in the close inspection camera.
-  const boltMat=new T.MeshStandardMaterial({color:'#929990',metalness:.8,roughness:.42});
-  for(const side of [-1,1])for(const [y,z] of [[.56,-.07],[.27,.92],[.27,-.88],[.14,-.52],[.14,-.18],[.14,.16],[.14,.5]]){
-    const cap=new T.Mesh(new T.CylinderGeometry(.034,.034,.018,8),boltMat);cap.rotation.z=Math.PI/2;cap.position.set(side*.958,y,z);groups[side<0?'trackLeft':'trackRight'].add(cap);
+
+  // Bright glowing lens flare corona sprites on Bobcat headlights
+  const flares=[];
+  if(typeof document!=='undefined'){
+    const flareTex=createHeadlightFlareTexture();
+    const flareMat=new T.SpriteMaterial({map:flareTex,color:'#ffffff',transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false});
+    for(const x of [-.32,.32]){
+      const sp=new T.Sprite(flareMat);
+      sp.position.set(x,1.54,.52);
+      sp.scale.set(.42,.42,1);
+      body.add(sp);
+      flares.push(sp);
+    }
   }
+
+  // Mechanical wheel rollers rotate visibly with track travel
+  const boltMat=new T.MeshStandardMaterial({color:'#c2c8c0',metalness:.85,roughness:.35});
+  const spokeMat=new T.MeshStandardMaterial({color:'#283028',metalness:.75,roughness:.5});
+  const ctlWheels=[];
+  for(const side of [-1,1]){
+    const sIdx=side<0?0:1;
+    for(const [y,z] of [[.56,-.07],[.27,.92],[.27,-.88],[.14,-.52],[.14,-.18],[.14,.16],[.14,.5]]){
+      const wheelGroup=new T.Group();
+      wheelGroup.position.set(side*.958,y,z);
+      const cap=new T.Mesh(new T.CylinderGeometry(.044,.044,.022,12),boltMat);
+      cap.rotation.z=Math.PI/2;
+      wheelGroup.add(cap);
+      const spoke=new T.Mesh(new T.BoxGeometry(.024,.08,.026),spokeMat);
+      wheelGroup.add(spoke);
+      groups[side<0?'trackLeft':'trackRight'].add(wheelGroup);
+      ctlWheels.push({group:wheelGroup,side:sIdx,radius:y>.2?.22:.12});
+    }
+  }
+  // Night forward headlights: Soft wide ground illumination pool + subtle SpotLight
+  const spotLight=new T.SpotLight('#fff4d6',0,11,Math.PI/3.3,.85,1.7);
+  spotLight.position.set(0,1.55,.5);
+  const spotTarget=new T.Object3D();spotTarget.position.set(0,0,3.0);
+  pitchFrame.add(spotLight,spotTarget);spotLight.target=spotTarget;
+
+  let poolMat=null,groundPool=null;
+  if(typeof document!=='undefined'){
+    const poolTex=createHeadlightPoolTexture();
+    // Broad width: 3.6m wide (50% wider spread in front of the bucket), 2.9m length
+    const poolGeo=new T.PlaneGeometry(3.6/1.35,2.9/1.35);poolGeo.rotateX(-Math.PI/2);
+    poolMat=new T.MeshBasicMaterial({map:poolTex,transparent:true,opacity:0,depthWrite:false,blending:T.NormalBlending});
+    groundPool=new T.Mesh(poolGeo,poolMat);
+    groundPool.position.set(0,.005,1.95/1.35);
+    root.add(groundPool);
+  }
+
   const pivots={arm:new T.Vector3(0,1.28,-.9),bucket:new T.Vector3(0,.1,1.1)};
   // Geometry is retained in its original coordinate system. Tiny secondary motion
   // is applied around the mechanical pivots using compensated translations.
   const pivotRotation=(group,pivot,angle)=>{group.rotation.x=angle;group.position.copy(pivot).sub(pivot.clone().applyEuler(group.rotation));};
-  function update(motion){
+  function update(motion,night=0){
+    const n=typeof night==='number'?night:0;
     root.position.set(motion.x,motion.y+.025,motion.z);root.rotation.y=motion.yaw;
     root.rotation.x=0;root.rotation.z=0;
     pitchFrame.rotation.x=motion.pose.pitch;pitchFrame.rotation.z=motion.pose.roll;
@@ -104,7 +185,21 @@ export function createCTL() {
       }
       treadMeshes[s].instanceMatrix.needsUpdate=true;
     }
-    beacon.material.emissiveIntensity=.55+Math.max(0,Math.sin(motion.time*5))*.8;
+    for(const w of ctlWheels){
+      const dist=(w.side===0?motion.leftDistance:motion.rightDistance)/1.35;
+      w.group.rotation.x=dist/w.radius;
+    }
+    beacon.material.emissiveIntensity=(.55+Math.max(0,Math.sin(motion.time*5))*.8)*(1+n*.5);
+    spotLight.intensity=n*2.6;
+    spotLight.visible=n>.02;
+    if(groundPool){groundPool.visible=n>.02;if(poolMat)poolMat.opacity=n*.48;}
+    lampMaterial.emissiveIntensity=.4+n*5.2;
+    lampMaterial.emissive.set(n>.1?'#ffffff':'#ffe5ab');
+    for(const f of flares){
+      f.visible=n>.02;
+      f.material.opacity=n*.95;
+      f.scale.setScalar(.40+n*.08+Math.sin(motion.time*16)*.01);
+    }
   }
   return {root,update,source:'preview_ctl_3d.html',parts:groups};
 }

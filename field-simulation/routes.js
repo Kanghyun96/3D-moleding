@@ -41,6 +41,17 @@ export const LOOPS={
 const gatePhoto=[242,272];
 const parkingExit=[HOME_PHOTO,[642,93],[625,130],[575,150],[548,152],[520,145],[472,138],[405,168]];
 const homeToGatePts=[...parkingExit,[332,214],[275,250],gatePhoto];
+
+// Dedicated parking exit/entry route for P01 (DX-55)
+export const P01_PHOTO=[586,74.127];
+export const P01_HOME=photoToWorld(P01_PHOTO);
+const p01Front=photoToWorld([P01_PHOTO[0]+PARKING_DIRECTION[0],P01_PHOTO[1]+PARKING_DIRECTION[1]]);
+export const P01_YAW=Math.atan2(p01Front[0]-P01_HOME[0],p01Front[1]-P01_HOME[1]);
+
+const p01Exit=[P01_PHOTO,[618,104],[605,134],[575,150],[548,152],[520,145],[472,138],[405,168]];
+const p01ToGatePts=[...p01Exit,[332,214],[275,250],gatePhoto];
+const p01ToGate=fromPhoto(p01ToGatePts,false,'home_P01-gate');
+
 const gateToAPts=[gatePhoto,[258,286],[274,299]];
 const aToDPts=[[274,299],[298,308],[332,312],[368,308],[402,300]];
 const aToEPts=[[274,299],[292,320],[312,352]];
@@ -90,6 +101,7 @@ function expectedSeconds(route,speed){
 const edge=(from,to,route,speed)=>Object.freeze({from,to,route,speed,seconds:expectedSeconds(route,speed)});
 export const ROADS=Object.freeze([
   edge('home','gate',homeToGate,1.9),edge('gate','home',homeToGate.reversed(),1.9),
+  edge('home_P01','gate',p01ToGate,1.9),edge('gate','home_P01',p01ToGate.reversed(),1.9),
   edge('gate','A',gateToA,1.5),edge('A','gate',gateToA.reversed(),1.5),
   edge('A','D',aToD,1.5),edge('D','A',aToD.reversed(),1.5),
   edge('A','E',aToE,1.5),edge('E','A',aToE.reversed(),1.5),
@@ -107,14 +119,19 @@ export const ROADS=Object.freeze([
 // Dijkstra on expected travel time. Transfers between test surfaces never
 // route through the garage ('home'); they use internal connectors or the
 // lower perimeter / divider passage.
-export function planTravel(from,to){
+export function planTravel(from,to,slotId='P03'){
+  if(slotId==='P01'||from==='home_P01'||to==='home_P01'){
+    if(from==='home')from='home_P01';
+    if(to==='home')to='home_P01';
+  }
   if(from===to)return {edges:[],seconds:0,nodes:[from]};
+  const isHome=n=>n==='home'||n==='home_P01';
   const costs=new Map([[from,0]]),previous=new Map(),unvisited=new Set([from]);
   while(unvisited.size){
     let at=null,best=Infinity;for(const node of unvisited){const n=costs.get(node);if(n<best){at=node;best=n;}}
     unvisited.delete(at);if(at===to)break;
     for(const road of ROADS)if(road.from===at){
-      if(road.to==='home'&&to!=='home')continue;
+      if(isHome(road.to)&&!isHome(to))continue;
       const next=best+road.seconds;
       if(next<(costs.get(road.to)??Infinity)){costs.set(road.to,next);previous.set(road.to,road);unvisited.add(road.to);}
     }

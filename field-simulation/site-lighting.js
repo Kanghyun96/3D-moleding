@@ -60,6 +60,6 @@ export function createSiteLighting({container,scene,renderer,sun,fill,sky,shadow
     return state;
   }
   function align(photoStyle){for(const key of ['width','height','left','top'])layer.style[key]=photoStyle[key];}
-  return {update,align,setMode:mode=>clock.setPreview(mode),
+  return {update,align,setMode:mode=>clock.setPreview(mode),getNight:()=>night,
     snapshot:()=>({...state,renderedNight:night,schedule:'06:00–07:00 / 18:00–19:00 KST (임시)',streetLights:STREET_LIGHTS.length,buildingLights:['office','garage']})};
 }
