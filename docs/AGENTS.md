@@ -51,14 +51,38 @@
 
 ---
 
-## 5. 다중 장비 동시 주행 (Concurrent Multi-Vehicle Driving)
-- `simulation.js`의 메인 루프에서 모든 장비의 물리 인스턴스(`VehicleMotion`)가 독립적으로 `motion.update(dt)`를 수행합니다.
+## 5. 다중 장비 동시 주행 및 충돌 방지/차간 거리 유지 (Concurrent Multi-Vehicle Driving & Collision Avoidance)
+- `simulation.js`의 메인 루프에서 모든 장비의 물리 인스턴스(`VehicleMotion`)가 독립적으로 `motion.update(dt, allMotions)`를 수행합니다.
+- **다중 차량 동시 파티클 비산 (`surface-effects.js`)**:
+  - 특정 1대만 파티클을 뿜는 것이 아니라, 주행 중인 모든 장비의 무한궤도 폭(`halfWidthWorld`, `rearOffsetWorld`)에 맞추어 흙먼지/자갈/물 튀김/잔물결이 각 차량 뒤에서 동시에 실시간 방출됩니다.
+- **차간 거리 유지 (Adaptive Follow-Distance Control)**:
+  - 동일한 시험로(예: A 흙길)에 여러 대의 장비가 진입했을 때, 전방 3.2m~6.8m 이내에 선행 장비가 있으면 후행 장비가 자동으로 감속하며, 3.2m 이내로 좁혀지면 정지하여 **절대 겹치지 않고 일정한 안전 거리를 유지하며 주행**합니다.
+- **교차로/합류로 양보 및 관통 방지 (Inter-vehicle Yield & Anti-clipping)**:
+  - 진입로나 좁은 도로에서 장비 간 간격이 3.8m 이내로 교차할 때 상대 장비가 지나갈 때까지 대기(Yield)하여 **유령처럼 서로 겹쳐서 통과하는 현상을 100% 방지**합니다.
 - 2D 캔버스 클릭 히트 타겟 및 우측 상단 장비 선택 패널(`equipment-panel.js`)에서 언제든 원하는 장비로 시점을 전환하고 주행 명령을 내릴 수 있습니다.
-- 장비 간 거리 감지 및 충돌 방지 로직을 유지합니다.
 
 ---
 
-## 6. 작업 환경 및 테스트 동기화 원칙 (Workspace Mirroring & Verification)
+## 6. 장비 이식 가이드 (Equipment Standalone Porting Guide)
+다른 프로젝트나 외부 웹 앱으로 장비 시스템만 독립 이식할 때 다음 3가지만 가져가면 됩니다:
+1. **자산 폴더**: `field-simulation/assets/` 내 7대 GLB 파일 (`Bobcat T-870.glb`, `Bobcat T-76.glb`, `JohnDeere 323E.glb`, `JohnDeere 333G.glb`, `DX-55.glb`, `Yanmar ViO20.glb`, `Yanmar ViO30.glb`)
+2. **로더 및 모션 모듈**:
+   - `dx55-model.js`: 4K 밉맵 필터링, 접촉 그림자(AO Plane), 궤도 슈 순환 애니메이션, 바퀴 동기화, CTL/MHE 야간 라이트 일체
+   - `parking-config.js`: 7대 장비별 규격 제원표(`EQUIPMENTS`)
+   - `motion.js` & `surface-effects.js`: 다중 차량 차간 거리 유지, 노면별 서스펜션 관성 및 독립 파티클 엔진
+3. **사용법**:
+   ```javascript
+   import { createGLBEquipment } from './dx55-model.js';
+   import { EQUIPMENTS } from './parking-config.js';
+   const model = createGLBEquipment(EQUIPMENTS['bobcat-t870']);
+   scene.add(model.root);
+   // 매 프레임 업데이트
+   model.update(motion, isNight ? 1 : 0);
+   ```
+
+---
+
+## 7. 작업 환경 및 테스트 동기화 원칙 (Workspace Mirroring & Verification)
 1. **양방향 동기화**:
    - `C:\Users\김강현\Downloads\3D-moleding-main` (Active)
    - `F:\Workspace\3D-moleding-main` (Git Root)

@@ -34,11 +34,12 @@ try {
   const resApi = await fetch(base + '/api/equipment');
   assert.equal(resApi.status, 200);
   const data = await resApi.json();
-  assert.equal(data.equipment.length, 2);
+  assert.equal(data.equipment.length, 7);
   const ids = data.equipment.map(e => e.id);
-  assert.ok(ids.includes('bobcat-t870'));
-  assert.ok(ids.includes('dx-55'));
-  console.log('GET /api/equipment -> 200 OK (2 equipments registered: ' + ids.join(', ') + ')');
+  for (const expectedId of ['bobcat-t870', 'dx-55', 'bobcat-t76', 'johndeere-323e', 'johndeere-333g', 'yanmar-vio20', 'yanmar-vio30']) {
+    assert.ok(ids.includes(expectedId), `Missing equipment ${expectedId}`);
+  }
+  console.log('GET /api/equipment -> 200 OK (7 equipments registered: ' + ids.join(', ') + ')');
 
   // 5. API get dx-55
   const resDX55 = await fetch(base + '/api/equipment/dx-55');
@@ -54,13 +55,15 @@ try {
   assert.equal(resLoader.headers.get('content-type'), 'text/javascript; charset=utf-8');
   console.log('GET /field-simulation/vendor/GLTFLoader.js -> 200 OK');
 
-  // 7. GLB model file header check (HEAD request)
-  const resGlb = await fetch(base + '/picture/DX-55.glb', { method: 'HEAD' });
-  assert.equal(resGlb.status, 200);
-  assert.equal(resGlb.headers.get('content-type'), 'model/gltf-binary');
-  const len = parseInt(resGlb.headers.get('content-length') || '0', 10);
-  assert.ok(len > 80000000, 'GLB file size should be > 80MB, got: ' + len);
-  console.log(`HEAD /picture/DX-55.glb -> 200 OK (type: ${resGlb.headers.get('content-type')}, length: ${(len / 1024 / 1024).toFixed(1)} MB)`);
+  // 7. GLB model files header check (HEAD request for all 7 assets in field-simulation/assets/)
+  for (const glbName of ['Bobcat T-870.glb', 'Bobcat T-76.glb', 'DX-55.glb', 'JohnDeere 323E.glb', 'JohnDeere 333G.glb', 'Yanmar ViO20.glb', 'Yanmar ViO30.glb']) {
+    const resGlb = await fetch(base + '/field-simulation/assets/' + encodeURIComponent(glbName), { method: 'HEAD' });
+    assert.equal(resGlb.status, 200, `HEAD ${glbName} failed`);
+    assert.equal(resGlb.headers.get('content-type'), 'model/gltf-binary');
+    const len = parseInt(resGlb.headers.get('content-length') || '0', 10);
+    assert.ok(len > 80000000, `GLB file size for ${glbName} should be > 80MB, got: ${len}`);
+    console.log(`HEAD /field-simulation/assets/${glbName} -> 200 OK (${(len / 1024 / 1024).toFixed(1)} MB)`);
+  }
 
   console.log('\nAll 7 server & API smoke checks passed successfully!');
 } finally {

@@ -1,17 +1,28 @@
 import { readFile, writeFile, mkdir, rename, unlink } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { EQUIPMENT_SCHEMA_VERSION, initialEquipment, applyEquipmentPatch } from './field-simulation/equipment-schema.js';
+import { EQUIPMENT_IDS } from './parking-config.js';
+import { EQUIPMENT_SCHEMA_VERSION, initialEquipment, applyEquipmentPatch } from './equipment-schema.js';
 export function createEquipmentStore(file){
   let queue=Promise.resolve();
   async function load(){
     let data;
     try{data=JSON.parse(await readFile(file,'utf8'));}
-    catch(error){if(error.code==='ENOENT')return{schemaVersion:EQUIPMENT_SCHEMA_VERSION,equipment:{'bobcat-t870':initialEquipment('bobcat-t870'),'dx-55':initialEquipment('dx-55')}};throw new Error('저장된 시험 정보를 읽지 못했습니다.');}
+    catch(error){
+      if(error.code==='ENOENT'){
+        const equipment={};
+        for(const id of EQUIPMENT_IDS)equipment[id]=initialEquipment(id);
+        return{schemaVersion:EQUIPMENT_SCHEMA_VERSION,equipment};
+      }
+      throw new Error('저장된 시험 정보를 읽지 못했습니다.');
+    }
     if(!data||data.schemaVersion!==EQUIPMENT_SCHEMA_VERSION||!data.equipment||typeof data.equipment!=='object'||Array.isArray(data.equipment))throw new Error('지원하지 않는 시험 정보 저장 형식입니다.');
     for(const[id,record]of Object.entries(data.equipment)){
       if(!record||record.id!==id||typeof record.name!=='string'||typeof record.parkingSlotId!=='string'||!Number.isSafeInteger(record.revision)||record.revision<0)throw new Error('저장된 장비 정보가 올바르지 않습니다.');
       applyEquipmentPatch(record,{purpose:record.purpose,testHours:record.testHours,testStatus:record.testStatus,tracks:record.tracks,surfaceHours:record.surfaceHours});
+    }
+    for(const id of EQUIPMENT_IDS){
+      if(!Object.hasOwn(data.equipment,id))data.equipment[id]=initialEquipment(id);
     }
     return data;
   }

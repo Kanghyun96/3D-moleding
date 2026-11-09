@@ -78,5 +78,7 @@ export const MAP_LABELS=[
   {id:'D',name:SURFACE_NAMES.D,p:[500,266]}, {id:'E',name:SURFACE_NAMES.E,p:[322,385]},
   {id:'F',name:SURFACE_NAMES.F,p:[316,225]},
   {name:'P',p:[548,52],parking:true},
-  {name:'차고지',p:[966,146],building:true},{name:'사무실',p:[719,326],building:true},
+  {name:'점검 시작',p:[1010,220],building:true},
+  {name:'작업 이어하기',p:[785,130],building:true},
+  {name:'보고서 작성',p:[719,342],building:true},
 ];

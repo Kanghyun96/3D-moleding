@@ -1,58 +1,68 @@
 import * as T from './vendor/three.module.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
+import { EQUIPMENTS } from './parking-config.js';
 
 export const DX55_SCALE = 1.95;
-export const DX55_BASE_YAW = Math.PI / 2; // +X in raw mesh aligns to +Z forward
+export const DX55_BASE_YAW = Math.PI / 2; // -X in raw mesh aligns to +Z forward
 export const DX55_GROUND_OFFSET = 0.738; // Grounded flush with terrain to eliminate hovering
 
-// Track loop geometry (local units; scale 1.95 applies to root)
-const R_TRACK = 0.130;
-const Z_FRONT = 0.58;
-const Z_REAR = -0.54;
-const Y_BOT = 0.010;
-const Y_MID = Y_BOT + R_TRACK; // 0.140
-const Y_TOP = Y_BOT + 2 * R_TRACK; // 0.270
-const LEN_STRAIGHT = Z_FRONT - Z_REAR; // 1.12
-const LEN_ARC = Math.PI * R_TRACK; // ~0.4084
-export const DX55_TRACK_LENGTH = 2 * LEN_STRAIGHT + 2 * LEN_ARC; // ~3.0568
+// Default DX-55 track loop geometry (local units; scale 1.95 applies to root)
+const R_TRACK = 0.105;
+const Z_FRONT = 0.18;
+const Z_REAR = -0.62;
+const LEN_STRAIGHT = Z_FRONT - Z_REAR; // 0.80
+const LEN_ARC = Math.PI * R_TRACK; // ~0.3299
+export const DX55_TRACK_LENGTH = 2 * LEN_STRAIGHT + 2 * LEN_ARC;
 
-function trackPoint(distance) {
-  let d = ((distance % DX55_TRACK_LENGTH) + DX55_TRACK_LENGTH) % DX55_TRACK_LENGTH;
-  // 1. Bottom straight: rear to front (Z goes from -0.54 to +0.58)
-  if (d <= LEN_STRAIGHT) {
-    const t = d / LEN_STRAIGHT;
-    return { y: Y_BOT, z: Z_REAR + t * LEN_STRAIGHT, angle: 0 };
-  }
-  d -= LEN_STRAIGHT;
-  // 2. Front idler curve: bottom to top
-  if (d <= LEN_ARC) {
-    const t = d / LEN_ARC;
-    const phi = -Math.PI / 2 + t * Math.PI;
+export function computeTrackLoop({ zFront = Z_FRONT, zRear = Z_REAR, rTrack = R_TRACK, yBot = 0.010 } = {}) {
+  const yMid = yBot + rTrack;
+  const yTop = yBot + 2 * rTrack;
+  const lenStraight = zFront - zRear;
+  const lenArc = Math.PI * rTrack;
+  const trackLength = 2 * lenStraight + 2 * lenArc;
+
+  function pointAt(distance) {
+    let d = ((distance % trackLength) + trackLength) % trackLength;
+    // 1. Bottom straight: rear to front
+    if (d <= lenStraight) {
+      const t = d / lenStraight;
+      return { y: yBot, z: zRear + t * lenStraight, angle: 0 };
+    }
+    d -= lenStraight;
+    // 2. Front idler curve: bottom to top
+    if (d <= lenArc) {
+      const t = d / lenArc;
+      const phi = -Math.PI / 2 + t * Math.PI;
+      return {
+        y: yMid + rTrack * Math.sin(phi),
+        z: zFront + rTrack * Math.cos(phi),
+        angle: -t * Math.PI,
+      };
+    }
+    d -= lenArc;
+    // 3. Top straight: front to rear
+    if (d <= lenStraight) {
+      const t = d / lenStraight;
+      return { y: yTop, z: zFront - t * lenStraight, angle: -Math.PI };
+    }
+    d -= lenStraight;
+    // 4. Rear drive sprocket curve: top to bottom
+    const t = d / lenArc;
+    const phi = Math.PI / 2 + t * Math.PI;
     return {
-      y: Y_MID + R_TRACK * Math.sin(phi),
-      z: Z_FRONT + R_TRACK * Math.cos(phi),
-      angle: -t * Math.PI,
+      y: yMid + rTrack * Math.sin(phi),
+      z: zRear + rTrack * Math.cos(phi),
+      angle: -Math.PI - t * Math.PI,
     };
   }
-  d -= LEN_ARC;
-  // 3. Top straight: front to rear (Z goes from +0.58 to -0.54)
-  if (d <= LEN_STRAIGHT) {
-    const t = d / LEN_STRAIGHT;
-    return { y: Y_TOP, z: Z_FRONT - t * LEN_STRAIGHT, angle: -Math.PI };
-  }
-  d -= LEN_STRAIGHT;
-  // 4. Rear drive sprocket curve: top to bottom
-  const t = d / LEN_ARC;
-  const phi = Math.PI / 2 + t * Math.PI;
-  return {
-    y: Y_MID + R_TRACK * Math.sin(phi),
-    z: Z_REAR + R_TRACK * Math.cos(phi),
-    angle: -Math.PI - t * Math.PI,
-  };
+
+  return { yBot, yMid, yTop, zFront, zRear, rTrack, lenStraight, lenArc, trackLength, pointAt };
 }
 
-function createContactShadowTexture() {
+let sharedShadowTex = null;
+function getContactShadowTexture() {
   if (typeof document === 'undefined') return null;
+  if (sharedShadowTex) return sharedShadowTex;
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 512;
@@ -75,20 +85,22 @@ function createContactShadowTexture() {
     ctx.fillRect(8, 16, 112, 480);
   }
 
-  const tex = new T.CanvasTexture(canvas);
-  tex.colorSpace = T.SRGBColorSpace;
-  return tex;
+  sharedShadowTex = new T.CanvasTexture(canvas);
+  sharedShadowTex.colorSpace = T.SRGBColorSpace;
+  return sharedShadowTex;
 }
 
-function createHeadlightPoolTexture() {
+let sharedMHEPoolTex = null;
+function getMHEHeadlightPoolTexture() {
   if (typeof document === 'undefined') return null;
+  if (sharedMHEPoolTex) return sharedMHEPoolTex;
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, 256, 256);
 
-  // Compact, soft forward oval (short reach, natural falloff)
+  // Compact, soft forward oval for MHE (Excavators)
   const grad = ctx.createRadialGradient(128, 190, 15, 128, 115, 115);
   grad.addColorStop(0, 'rgba(255, 244, 200, 0.72)');
   grad.addColorStop(0.30, 'rgba(255, 232, 165, 0.44)');
@@ -101,57 +113,149 @@ function createHeadlightPoolTexture() {
   ctx.ellipse(128, 128, 95, 120, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const tex = new T.CanvasTexture(canvas);
-  tex.colorSpace = T.SRGBColorSpace;
-  return tex;
+  sharedMHEPoolTex = new T.CanvasTexture(canvas);
+  sharedMHEPoolTex.colorSpace = T.SRGBColorSpace;
+  return sharedMHEPoolTex;
+}
+
+let sharedCTLPoolTex = null;
+export function getCTLHeadlightPoolTexture() {
+  if (typeof document === 'undefined') return null;
+  if (sharedCTLPoolTex) return sharedCTLPoolTex;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+
+  // Wide, soft forward beam covering the entire front width of the CTL bucket
+  const grad = ctx.createRadialGradient(128, 190, 15, 128, 130, 120);
+  grad.addColorStop(0, 'rgba(255, 246, 205, 0.76)');
+  grad.addColorStop(0.32, 'rgba(255, 234, 165, 0.46)');
+  grad.addColorStop(0.62, 'rgba(255, 215, 130, 0.18)');
+  grad.addColorStop(0.85, 'rgba(240, 195, 100, 0.05)');
+  grad.addColorStop(1.0, 'rgba(200, 170, 80, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.ellipse(128, 135, 118, 105, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  sharedCTLPoolTex = new T.CanvasTexture(canvas);
+  sharedCTLPoolTex.colorSpace = T.SRGBColorSpace;
+  return sharedCTLPoolTex;
+}
+
+let sharedCTLFlareTex = null;
+export function getCTLHeadlightFlareTexture() {
+  if (typeof document === 'undefined') return null;
+  if (sharedCTLFlareTex) return sharedCTLFlareTex;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+
+  const grad = ctx.createRadialGradient(64, 64, 3, 64, 64, 62);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+  grad.addColorStop(0.18, 'rgba(255, 250, 225, 0.92)');
+  grad.addColorStop(0.38, 'rgba(255, 225, 145, 0.45)');
+  grad.addColorStop(0.70, 'rgba(255, 195, 85, 0.12)');
+  grad.addColorStop(1.0, 'rgba(255, 170, 40, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(64, 64, 62, 0, Math.PI * 2);
+  ctx.fill();
+
+  sharedCTLFlareTex = new T.CanvasTexture(canvas);
+  sharedCTLFlareTex.colorSpace = T.SRGBColorSpace;
+  return sharedCTLFlareTex;
+}
+
+// Sequential background loader queue so 7 high-poly GLB assets load smoothly
+let loadChain = Promise.resolve();
+function enqueueLoad(task) {
+  const next = loadChain.then(task, task);
+  loadChain = next.catch(() => {});
+  return next;
 }
 
 /**
- * Creates the 3D model instance and dynamic animation controller for Doosan DX-55 Excavator.
- * Features:
- * - Real-time continuous crawler track shoe belt circulation
- * - Rotating internal sprockets, idlers, and lower/upper track rollers
- * - Dedicated ground contact ambient shadow to eliminate hovering/floating
- * - Heavy machinery suspension physics (acceleration squat, braking dive, turn roll, diesel vibration)
+ * Creates a 3D GLB equipment instance with full crawler undercarriage mechanics,
+ * contact ambient occlusion shadows, inertial suspension dynamics, and
+ * category-specific night illumination (MHE vs CTL).
  */
-export async function createDX55({ glbUrl } = {}) {
+export function createGLBEquipment(config = EQUIPMENTS['dx-55'], { glbUrl } = {}) {
+  const scale = config.scale ?? DX55_SCALE;
+  const baseYaw = config.baseYaw ?? DX55_BASE_YAW;
+  const groundOffset = config.groundOffset ?? DX55_GROUND_OFFSET;
+  const trackX = config.trackX ?? 0.366;
+  const shoeWidth = config.shoeWidth ?? 0.118;
+  const isCTL = config.category === 'ctl';
+  const glbFile = config.glbFile || 'DX-55.glb';
+
+  const loop = computeTrackLoop({
+    zFront: config.zFront ?? Z_FRONT,
+    zRear: config.zRear ?? Z_REAR,
+    rTrack: config.rTrack ?? R_TRACK,
+    yBot: 0.010,
+  });
+
   const root = new T.Group();
-  root.name = 'Doosan DX-55';
-  root.scale.setScalar(DX55_SCALE);
+  root.name = config.name || 'Equipment';
+  root.scale.setScalar(scale);
 
   const pitchFrame = new T.Group();
   root.add(pitchFrame);
 
   const trackLeft = new T.Group();
-  trackLeft.name = 'DX55-Track-Left';
+  trackLeft.name = `${config.id}-Track-Left`;
   const trackRight = new T.Group();
-  trackRight.name = 'DX55-Track-Right';
+  trackRight.name = `${config.id}-Track-Right`;
   pitchFrame.add(trackLeft, trackRight);
 
   const meshHolder = new T.Group();
-  meshHolder.rotation.y = DX55_BASE_YAW;
-  meshHolder.position.y = DX55_GROUND_OFFSET;
+  meshHolder.rotation.y = baseYaw;
+  meshHolder.position.y = groundOffset;
   pitchFrame.add(meshHolder);
+
+  // Fast invisible raycast proxy so pointer hover/click never traverses 4.5M triangles
+  const pickGeo = new T.BoxGeometry(trackX * 2.5, groundOffset * 1.9, (loop.zFront - loop.zRear) * 1.45);
+  const pickMat = new T.MeshBasicMaterial({ visible: false });
+  const pickBox = new T.Mesh(pickGeo, pickMat);
+  pickBox.position.set(0, groundOffset * 0.9, 0);
+  root.add(pickBox);
+
+  // Lightweight directional shadow proxy inside pitchFrame (avoids rendering 28M triangles in shadow pass)
+  const shadowCasterGeo = new T.BoxGeometry(trackX * 2.1, groundOffset * 1.35, (loop.zFront - loop.zRear) * 1.15);
+  const shadowCasterMat = new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+  const shadowCaster = new T.Mesh(shadowCasterGeo, shadowCasterMat);
+  shadowCaster.position.set(0, groundOffset * 0.72, (loop.zFront + loop.zRear) * 0.5);
+  shadowCaster.castShadow = true;
+  pitchFrame.add(shadowCaster);
 
   // Dedicated ground-hugging contact ambient occlusion shadows
   if (typeof document !== 'undefined') {
-    const shadowTex = createContactShadowTexture();
+    const shadowTex = getContactShadowTexture();
     const shadowMat = new T.MeshBasicMaterial({
       map: shadowTex,
       transparent: true,
       opacity: 0.68,
       depthWrite: false,
     });
-    const runnerGeo = new T.PlaneGeometry(0.18, 1.45);
+    const runnerLen = (loop.zFront - loop.zRear) + loop.rTrack * 2.5;
+    const runnerGeo = new T.PlaneGeometry(shoeWidth * 1.55, runnerLen);
     runnerGeo.rotateX(-Math.PI / 2);
 
+    const zMid = (loop.zFront + loop.zRear) * 0.5;
     const leftShadow = new T.Mesh(runnerGeo, shadowMat);
-    leftShadow.position.set(0.366, 0.003, 0.02);
+    leftShadow.position.set(trackX, 0.003, zMid);
 
     const rightShadow = new T.Mesh(runnerGeo, shadowMat);
-    rightShadow.position.set(-0.366, 0.003, 0.02);
+    rightShadow.position.set(-trackX, 0.003, zMid);
 
-    const bellyGeo = new T.PlaneGeometry(0.50, 1.35);
+    const bellyGeo = new T.PlaneGeometry(trackX * 1.4, runnerLen * 0.92);
     bellyGeo.rotateX(-Math.PI / 2);
     const bellyMat = new T.MeshBasicMaterial({
       color: '#070a08',
@@ -160,7 +264,7 @@ export async function createDX55({ glbUrl } = {}) {
       depthWrite: false,
     });
     const bellyShadow = new T.Mesh(bellyGeo, bellyMat);
-    bellyShadow.position.set(0, 0.002, 0.0);
+    bellyShadow.position.set(0, 0.002, zMid);
 
     const contactShadows = new T.Group();
     contactShadows.add(leftShadow, rightShadow, bellyShadow);
@@ -174,7 +278,7 @@ export async function createDX55({ glbUrl } = {}) {
     roughness: 0.86,
     metalness: 0.42,
   });
-  const treadGeo = new T.BoxGeometry(0.118, 0.006, 0.040);
+  const treadGeo = new T.BoxGeometry(shoeWidth, 0.006, 0.040);
   const dummy = new T.Object3D();
   const treadMeshes = [];
 
@@ -201,36 +305,44 @@ export async function createDX55({ glbUrl } = {}) {
     roughness: 0.28,
   });
 
-  const dxWheels = [];
+  const wheels = [];
+  const rollerSpan = loop.zFront - loop.zRear;
+  const rollerZs = [
+    loop.zRear + rollerSpan * 0.18,
+    loop.zRear + rollerSpan * 0.39,
+    loop.zRear + rollerSpan * 0.61,
+    loop.zRear + rollerSpan * 0.82,
+  ];
+
   for (const side of [1, -1]) {
     const sIdx = side > 0 ? 0 : 1; // 0: Left, 1: Right
     const parent = side > 0 ? trackLeft : trackRight;
-    const xPos = side * 0.366;
+    const xPos = side * trackX;
 
-    // 1. Front Idler Wheel (large smooth guide wheel)
+    // 1. Front Idler Wheel
     {
       const group = new T.Group();
-      group.position.set(xPos, Y_MID, Z_FRONT);
-      const rim = new T.Mesh(new T.CylinderGeometry(R_TRACK * 0.90, R_TRACK * 0.90, 0.040, 18), wheelMetalMat);
+      group.position.set(xPos, loop.yMid, loop.zFront);
+      const rim = new T.Mesh(new T.CylinderGeometry(loop.rTrack * 0.90, loop.rTrack * 0.90, 0.040, 18), wheelMetalMat);
       rim.rotation.z = Math.PI / 2;
       group.add(rim);
       const hub = new T.Mesh(new T.CylinderGeometry(0.042, 0.042, 0.048, 12), boltMat);
       hub.rotation.z = Math.PI / 2;
       group.add(hub);
       for (let k = 0; k < 4; k++) {
-        const spoke = new T.Mesh(new T.BoxGeometry(0.014, R_TRACK * 1.55, 0.016), boltMat);
+        const spoke = new T.Mesh(new T.BoxGeometry(0.014, loop.rTrack * 1.55, 0.016), boltMat);
         spoke.rotation.x = (k * Math.PI) / 4;
         group.add(spoke);
       }
       parent.add(group);
-      dxWheels.push({ group, side: sIdx, radius: R_TRACK * 0.90 });
+      wheels.push({ group, side: sIdx, radius: loop.rTrack * 0.90 });
     }
 
     // 2. Rear Drive Sprocket (with 12 drive teeth)
     {
       const group = new T.Group();
-      group.position.set(xPos, Y_MID, Z_REAR);
-      const rim = new T.Mesh(new T.CylinderGeometry(R_TRACK * 0.88, R_TRACK * 0.88, 0.040, 18), wheelMetalMat);
+      group.position.set(xPos, loop.yMid, loop.zRear);
+      const rim = new T.Mesh(new T.CylinderGeometry(loop.rTrack * 0.88, loop.rTrack * 0.88, 0.040, 18), wheelMetalMat);
       rim.rotation.z = Math.PI / 2;
       group.add(rim);
       const hub = new T.Mesh(new T.CylinderGeometry(0.048, 0.048, 0.048, 12), boltMat);
@@ -239,18 +351,18 @@ export async function createDX55({ glbUrl } = {}) {
       for (let k = 0; k < 12; k++) {
         const tooth = new T.Mesh(new T.BoxGeometry(0.016, 0.022, 0.034), wheelMetalMat);
         const ang = (k * Math.PI * 2) / 12;
-        tooth.position.set(0, Math.sin(ang) * R_TRACK * 0.90, Math.cos(ang) * R_TRACK * 0.90);
+        tooth.position.set(0, Math.sin(ang) * loop.rTrack * 0.90, Math.cos(ang) * loop.rTrack * 0.90);
         tooth.rotation.x = -ang;
         group.add(tooth);
       }
       parent.add(group);
-      dxWheels.push({ group, side: sIdx, radius: R_TRACK * 0.88 });
+      wheels.push({ group, side: sIdx, radius: loop.rTrack * 0.88 });
     }
 
     // 3. Lower Track Rollers (4 per side)
-    for (const z of [-0.34, -0.11, 0.12, 0.35]) {
+    for (const z of rollerZs) {
       const group = new T.Group();
-      group.position.set(xPos, Y_BOT + 0.052, z);
+      group.position.set(xPos, loop.yBot + 0.052, z);
       const roller = new T.Mesh(new T.CylinderGeometry(0.048, 0.048, 0.050, 14), wheelMetalMat);
       roller.rotation.z = Math.PI / 2;
       group.add(roller);
@@ -258,62 +370,139 @@ export async function createDX55({ glbUrl } = {}) {
       cap.rotation.z = Math.PI / 2;
       group.add(cap);
       parent.add(group);
-      dxWheels.push({ group, side: sIdx, radius: 0.048 });
+      wheels.push({ group, side: sIdx, radius: 0.048 });
     }
 
     // 4. Upper Carrier Roller (1 per side)
     {
       const group = new T.Group();
-      group.position.set(xPos, Y_TOP - 0.048, 0.02);
+      group.position.set(xPos, loop.yTop - 0.048, (loop.zFront + loop.zRear) * 0.5);
       const roller = new T.Mesh(new T.CylinderGeometry(0.042, 0.042, 0.050, 14), wheelMetalMat);
       roller.rotation.z = Math.PI / 2;
       group.add(roller);
       parent.add(group);
-      dxWheels.push({ group, side: sIdx, radius: -0.042 });
+      wheels.push({ group, side: sIdx, radius: -0.042 });
     }
   }
 
-  // Night forward illumination: Soft compact ground pool + subtle SpotLight
-  const dxSpot = new T.SpotLight('#fff4d6', 0, 11, Math.PI / 4.0, 0.85, 1.8);
-  dxSpot.position.set(0, 1.1, 0.3);
-  const dxTarget = new T.Object3D();
-  dxTarget.position.set(0, 0, 3.2);
-  pitchFrame.add(dxSpot, dxTarget);
-  dxSpot.target = dxTarget;
+  // Category-specific Night Illumination:
+  // - CTL: Dual front cab lamps + glowing lens flare corona sprites + amber roof beacon + wide bucket beam pool
+  // - MHE: Compact soft forward oval ground pool + subtle SpotLight (DX-55 style)
+  let spotLight = null;
+  let poolMat = null;
+  let groundPool = null;
+  let lampMaterial = null;
+  let beacon = null;
+  const flares = [];
 
-  // Ground light pool (compact, tightly placed in front of tracks, firmly on ground)
-  let dxPoolMat = null, dxGroundPool = null;
-  if (typeof document !== 'undefined') {
-    const poolTex = createHeadlightPoolTexture();
-    const poolGeo = new T.PlaneGeometry(2.6 / DX55_SCALE, 3.0 / DX55_SCALE);
-    poolGeo.rotateX(-Math.PI / 2);
-    dxPoolMat = new T.MeshBasicMaterial({
-      map: poolTex,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: T.NormalBlending,
+  if (isCTL) {
+    const cabLamp = config.cabLamp || { x: 0.22, y: 0.96, z: 0.31 };
+    const beaconPos = config.beacon || { x: 0.22, y: 1.07, z: -0.18 };
+
+    lampMaterial = new T.MeshStandardMaterial({
+      color: '#ffffff',
+      emissive: '#fff6dd',
+      emissiveIntensity: 0.8,
+      roughness: 0.15,
     });
-    dxGroundPool = new T.Mesh(poolGeo, dxPoolMat);
-    dxGroundPool.position.set(0, 0.005, 1.95 / DX55_SCALE);
-    root.add(dxGroundPool);
+    for (const x of [-cabLamp.x, cabLamp.x]) {
+      const lamp = new T.Mesh(new T.BoxGeometry(0.08, 0.04, 0.02), lampMaterial);
+      lamp.position.set(x, cabLamp.y, cabLamp.z);
+      pitchFrame.add(lamp);
+    }
+
+    beacon = new T.Mesh(
+      new T.CylinderGeometry(0.026, 0.036, 0.05, 12),
+      new T.MeshStandardMaterial({
+        color: '#dba154',
+        emissive: '#bd6b1f',
+        emissiveIntensity: 0.7,
+        roughness: 0.3,
+      })
+    );
+    beacon.position.set(beaconPos.x, beaconPos.y, beaconPos.z);
+    pitchFrame.add(beacon);
+
+    if (typeof document !== 'undefined') {
+      const flareTex = getCTLHeadlightFlareTexture();
+      const flareMat = new T.SpriteMaterial({
+        map: flareTex,
+        color: '#ffffff',
+        transparent: true,
+        opacity: 0,
+        blending: T.AdditiveBlending,
+        depthWrite: false,
+      });
+      for (const x of [-cabLamp.x, cabLamp.x]) {
+        const sp = new T.Sprite(flareMat);
+        sp.position.set(x, cabLamp.y, cabLamp.z + 0.02);
+        sp.scale.set(0.28, 0.28, 1);
+        pitchFrame.add(sp);
+        flares.push(sp);
+      }
+    }
+
+    spotLight = new T.SpotLight('#fff4d6', 0, 11, Math.PI / 3.3, 0.85, 1.7);
+    spotLight.position.set(0, cabLamp.y, cabLamp.z);
+    const spotTarget = new T.Object3D();
+    spotTarget.position.set(0, 0, 3.0);
+    pitchFrame.add(spotLight, spotTarget);
+    spotLight.target = spotTarget;
+
+    if (typeof document !== 'undefined') {
+      const poolTex = getCTLHeadlightPoolTexture();
+      const poolGeo = new T.PlaneGeometry(3.6 / scale, 2.9 / scale);
+      poolGeo.rotateX(-Math.PI / 2);
+      poolMat = new T.MeshBasicMaterial({
+        map: poolTex,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: T.NormalBlending,
+      });
+      groundPool = new T.Mesh(poolGeo, poolMat);
+      groundPool.position.set(0, 0.005, 1.95 / scale);
+      root.add(groundPool);
+    }
+  } else {
+    // MHE (DX-55, Yanmar ViO20, Yanmar ViO30) night lighting
+    spotLight = new T.SpotLight('#fff4d6', 0, 11, Math.PI / 4.0, 0.85, 1.8);
+    spotLight.position.set(0, 1.1, 0.3);
+    const spotTarget = new T.Object3D();
+    spotTarget.position.set(0, 0, 3.2);
+    pitchFrame.add(spotLight, spotTarget);
+    spotLight.target = spotTarget;
+
+    if (typeof document !== 'undefined') {
+      const poolTex = getMHEHeadlightPoolTexture();
+      const poolGeo = new T.PlaneGeometry(2.6 / scale, 3.0 / scale);
+      poolGeo.rotateX(-Math.PI / 2);
+      poolMat = new T.MeshBasicMaterial({
+        map: poolTex,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: T.NormalBlending,
+      });
+      groundPool = new T.Mesh(poolGeo, poolMat);
+      groundPool.position.set(0, 0.005, 1.95 / scale);
+      root.add(groundPool);
+    }
   }
 
-  // Candidate URLs to guarantee reliable loading in any environment
+  const encodedFile = encodeURIComponent(glbFile).replace(/%20/g, '%20');
   const candidateUrls = [
     glbUrl,
-    new URL('./assets/DX-55.glb', import.meta.url).href,
-    new URL('../picture/DX-55.glb', import.meta.url).href,
-    '/field-simulation/assets/DX-55.glb',
-    '/picture/DX-55.glb',
-    'assets/DX-55.glb',
-    'picture/DX-55.glb',
+    new URL(`./assets/${encodedFile}`, import.meta.url).href,
+    `/field-simulation/assets/${encodedFile}`,
+    `assets/${encodedFile}`,
   ].filter(Boolean);
 
   let loadedMesh = null;
   const loader = new GLTFLoader();
 
   async function loadModel() {
+    if (typeof window === 'undefined' && typeof fetch === 'undefined') return null;
     for (const url of candidateUrls) {
       try {
         const gltf = await new Promise((resolve, reject) => {
@@ -321,45 +510,56 @@ export async function createDX55({ glbUrl } = {}) {
         });
 
         loadedMesh = gltf.scene;
-        loadedMesh.name = 'DX-55-Body';
+        loadedMesh.name = `${config.id}-Body`;
 
         loadedMesh.traverse((child) => {
           if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+            child.castShadow = false;
+            child.receiveShadow = false;
             if (child.material) {
-              child.material.roughness = Math.max(child.material.roughness ?? 0.5, 0.45);
-              child.material.metalness = Math.min(child.material.metalness ?? 0.2, 0.65);
-              if (child.material.map) child.material.map.colorSpace = T.SRGBColorSpace;
+              // Disable mipmap downsampling on fragmented UV atlases so adjacent
+              // orange/yellow/white body islands never bleed into black cab/track/bucket UVs
+              if (child.material.map) {
+                child.material.map.colorSpace = T.SRGBColorSpace;
+                child.material.map.generateMipmaps = false;
+                child.material.map.minFilter = T.LinearFilter;
+                child.material.map.magFilter = T.LinearFilter;
+                child.material.map.needsUpdate = true;
+              }
+              // Remove fragmented atlas normal/metallicRoughness maps that cause
+              // seam speckles at overview distance, and apply clean uniform PBR values
+              child.material.normalMap = null;
+              child.material.metalnessMap = null;
+              child.material.roughnessMap = null;
+              child.material.roughness = 0.52;
+              child.material.metalness = 0.15;
+              child.material.needsUpdate = true;
             }
           }
         });
 
         meshHolder.add(loadedMesh);
-        console.log(`[DX-55] Successfully loaded clean 3D model from: ${url}`);
+        console.log(`[${config.name}] Successfully loaded 3D GLB model from: ${url}`);
         return loadedMesh;
       } catch (err) {
-        console.warn(`[DX-55] Failed to load from ${url}:`, err?.message || err);
+        console.warn(`[${config.name}] Failed to load from ${url}:`, err?.message || err);
       }
     }
-    console.error('[DX-55] Could not load DX-55 model from candidate URLs.');
+    console.error(`[${config.name}] Could not load GLB model from candidate URLs.`);
     return null;
   }
 
-  const loadPromise = loadModel();
-  await loadPromise;
+  const loadPromise = typeof window !== 'undefined' ? enqueueLoad(loadModel) : Promise.resolve(null);
 
-  // Track dynamic state for inertia calculations
   let prevSpeed = 0;
   let prevYaw = 0;
   let prevTime = 0;
   let currentSquat = 0;
   let currentRoll = 0;
 
-  // Motion update handler: Realistic heavy crawler dynamics & rolling wheel mechanics
   function update(motion, night = 0) {
     const n = typeof night === 'number' ? night : 0;
-    // 1. Position & Yaw (ground contact)
+    // 1. Position & Yaw (firm ground contact)
     root.position.set(motion.x, motion.y + 0.012, motion.z);
     root.rotation.y = motion.yaw;
     root.rotation.x = 0;
@@ -384,17 +584,16 @@ export async function createDX55({ glbUrl } = {}) {
     const pose = motion.pose || {};
     pitchFrame.rotation.x = (pose.pitch || 0) + currentSquat;
     pitchFrame.rotation.z = (pose.roll || 0) + currentRoll;
-    pitchFrame.position.y = (pose.heave || 0) / DX55_SCALE;
+    pitchFrame.position.y = (pose.heave || 0) / scale;
 
     // 3. Crawler track shoe belt continuous circulation
     for (let s = 0; s < treadMeshes.length; s++) {
       const { inst, side } = treadMeshes[s];
-      const dist = (side > 0 ? motion.leftDistance : motion.rightDistance) / DX55_SCALE;
+      const dist = (side > 0 ? motion.leftDistance : motion.rightDistance) / scale;
       for (let i = 0; i < SHOE_COUNT; i++) {
-        // At the bottom, belt travels backwards relative to chassis (gripping the ground)
-        const p = trackPoint((i / SHOE_COUNT) * DX55_TRACK_LENGTH - dist);
+        const p = loop.pointAt((i / SHOE_COUNT) * loop.trackLength - dist);
         dummy.position.set(
-          side * 0.366,
+          side * trackX,
           p.y - 0.002 * Math.cos(p.angle),
           p.z - 0.002 * Math.sin(p.angle)
         );
@@ -407,34 +606,63 @@ export async function createDX55({ glbUrl } = {}) {
     }
 
     // 4. Mechanical sprockets, idlers, and roller rotation
-    for (const w of dxWheels) {
-      const dist = (w.side === 0 ? motion.leftDistance : motion.rightDistance) / DX55_SCALE;
+    for (const w of wheels) {
+      const dist = (w.side === 0 ? motion.leftDistance : motion.rightDistance) / scale;
       w.group.rotation.x = dist / w.radius;
     }
 
     // 5. Heavy diesel engine vibration
     if (motion.speed > 0.05) {
       const vib = Math.sin((motion.time || 0) * 32) * 0.0018 * Math.min(motion.speed, 1.8);
-      meshHolder.position.y = DX55_GROUND_OFFSET + vib;
+      meshHolder.position.y = groundOffset + vib;
     } else {
       const idle = Math.sin((motion.time || 0) * 22) * 0.0010;
-      meshHolder.position.y = DX55_GROUND_OFFSET + idle;
+      meshHolder.position.y = groundOffset + idle;
     }
 
-    // 6. Night forward illumination (ground pool & subtle forward light)
-    dxSpot.intensity = n * 2.8;
-    dxSpot.visible = n > 0.02;
-    if (dxGroundPool) {
-      dxGroundPool.visible = n > 0.02;
-      if (dxPoolMat) dxPoolMat.opacity = n * 0.48;
+    // 6. Night forward illumination (CTL vs MHE)
+    if (isCTL) {
+      if (beacon) {
+        beacon.material.emissiveIntensity = (0.55 + Math.max(0, Math.sin((motion.time || 0) * 5)) * 0.8) * (1 + n * 0.5);
+      }
+      spotLight.intensity = n * 2.6;
+      spotLight.visible = n > 0.02;
+      if (groundPool) {
+        groundPool.visible = n > 0.02;
+        if (poolMat) poolMat.opacity = n * 0.48;
+      }
+      if (lampMaterial) {
+        lampMaterial.emissiveIntensity = 0.4 + n * 5.2;
+        lampMaterial.emissive.set(n > 0.1 ? '#ffffff' : '#ffe5ab');
+      }
+      for (const f of flares) {
+        f.visible = n > 0.02;
+        f.material.opacity = n * 0.95;
+        f.scale.setScalar(0.26 + n * 0.06 + Math.sin((motion.time || 0) * 16) * 0.008);
+      }
+    } else {
+      spotLight.intensity = n * 2.8;
+      spotLight.visible = n > 0.02;
+      if (groundPool) {
+        groundPool.visible = n > 0.02;
+        if (poolMat) poolMat.opacity = n * 0.48;
+      }
     }
   }
+
+  //Initialize track shoe matrices at rest so bounding box is valid immediately
+  update({ x: 0, y: 0, z: 0, yaw: 0, speed: 0, time: 0, leftDistance: 0, rightDistance: 0, pose: {} }, 0);
 
   return {
     root,
     update,
+    pickBox,
     source: candidateUrls[0],
     ready: loadPromise,
     parts: { body: meshHolder, trackLeft, trackRight },
   };
+}
+
+export async function createDX55({ glbUrl } = {}) {
+  return createGLBEquipment(EQUIPMENTS['dx-55'], { glbUrl });
 }

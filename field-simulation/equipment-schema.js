@@ -3,7 +3,7 @@ export const EQUIPMENT_SCHEMA_VERSION=1;
 export const SURFACE_NAMES=Object.freeze({A:'윗 흙 노면',B:'아래 흙 노면',C:'중간 흙 노면',D:'습전 노면',E:'자갈노면',F:'콘크리트 왕복로'});
 export function initialEquipment(id = DEFAULT_EQUIPMENT_ID){
   const base = EQUIPMENTS?.[id] || DEFAULT_EQUIPMENT;
-  return {...base,purpose:'',testHours:0,testStatus:'waiting',tracks:{left:'',right:''},surfaceHours:{general:0,gravel:0,concrete:0},revision:0,updatedAt:null};
+  return {id:base.id,name:base.name,parkingSlotId:base.parkingSlotId,purpose:'',testHours:0,testStatus:'waiting',tracks:{left:'',right:''},surfaceHours:{general:0,gravel:0,concrete:0},revision:0,updatedAt:null};
 }
 const fail=message=>{throw Object.assign(new Error(message),{status:400});};
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);

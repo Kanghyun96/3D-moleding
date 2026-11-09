@@ -2,11 +2,22 @@ import { CatmullRomCurve3, Vector3 } from './vendor/three.core.js';
 import { photoToWorld, worldToPhoto, HOME_PHOTO, surfaceAtPhoto, SURFACE_POLYGONS } from './photo-map.js';
 import { terrainHeight } from './terrain.js';
 import { SURFACE_NAMES } from './equipment-schema.js';
-import { PARKING_DIRECTION } from './parking-config.js';
+import { PARKING_DIRECTION, PARKING_SLOTS } from './parking-config.js';
 
 export const HOME=photoToWorld(HOME_PHOTO);
 const parkingFront=photoToWorld([HOME_PHOTO[0]+PARKING_DIRECTION[0],HOME_PHOTO[1]+PARKING_DIRECTION[1]]);
 export const HOME_YAW=Math.atan2(parkingFront[0]-HOME[0],parkingFront[1]-HOME[1]);
+
+export const SLOT_PHOTO=Object.freeze(Object.fromEntries(PARKING_SLOTS.map(s=>[s.id,s.p])));
+export const SLOT_HOME=Object.freeze(Object.fromEntries(PARKING_SLOTS.map(s=>[s.id,photoToWorld(s.p)])));
+export const SLOT_YAW=Object.freeze(Object.fromEntries(PARKING_SLOTS.map(s=>{
+  const pos=photoToWorld(s.p);
+  const front=photoToWorld([s.p[0]+PARKING_DIRECTION[0],s.p[1]+PARKING_DIRECTION[1]]);
+  return [s.id,Math.atan2(front[0]-pos[0],front[1]-pos[1])];
+})));
+export const P01_PHOTO=SLOT_PHOTO.P01;
+export const P01_HOME=SLOT_HOME.P01;
+export const P01_YAW=SLOT_YAW.P01;
 export const SURFACES={
   A:{name:'순환 주행로',material:'다짐흙',speed:2.15},
   B:{name:'대형 선회로',material:'건조토',speed:1.8},
@@ -39,18 +50,24 @@ export const LOOPS={
   F:fromPhoto([[348,195],[300,224],[254,260],[208,294],[162,329],[124,360],[108,389],[120,418],[159,451],[211,489],[268,529],[326,569],[370,592],[394,606]],false,'F-concrete-shuttle'),
 };
 const gatePhoto=[242,272];
-const parkingExit=[HOME_PHOTO,[642,93],[625,130],[575,150],[548,152],[520,145],[472,138],[405,168]];
-const homeToGatePts=[...parkingExit,[332,214],[275,250],gatePhoto];
+const commonGateApproach=[[405,168],[332,214],[275,250],gatePhoto];
+const parkingExit=[HOME_PHOTO,worldToPhoto(-64.2,-72.0),worldToPhoto(-63.8,-62.0),worldToPhoto(-63.0,-52.0),[405,168]];
+const homeToGatePts=[...parkingExit.slice(0,-1),...commonGateApproach];
 
-// Dedicated parking exit/entry route for P01 (DX-55)
-export const P01_PHOTO=[586,74.127];
-export const P01_HOME=photoToWorld(P01_PHOTO);
-const p01Front=photoToWorld([P01_PHOTO[0]+PARKING_DIRECTION[0],P01_PHOTO[1]+PARKING_DIRECTION[1]]);
-export const P01_YAW=Math.atan2(p01Front[0]-P01_HOME[0],p01Front[1]-P01_HOME[1]);
-
-const p01Exit=[P01_PHOTO,[618,104],[605,134],[575,150],[548,152],[520,145],[472,138],[405,168]];
-const p01ToGatePts=[...p01Exit,[332,214],[275,250],gatePhoto];
-const p01ToGate=fromPhoto(p01ToGatePts,false,'home_P01-gate');
+// Dedicated parking exit/entry routes for all 7 slots (CTL Zone: P03,P02,P04,P05 / MHE Zone: P01,P06,P07)
+const slotExitWaypoints={
+  // CTL Zone (Left-upper row) exits into the central aisle (x = -63.8)
+  P02:[SLOT_PHOTO.P02,worldToPhoto(-64.2,-67.2),worldToPhoto(-63.8,-59.0),worldToPhoto(-63.0,-52.0),...commonGateApproach],
+  P04:[SLOT_PHOTO.P04,worldToPhoto(-64.2,-62.4),worldToPhoto(-63.5,-55.5),worldToPhoto(-62.5,-50.0),...commonGateApproach],
+  P05:[SLOT_PHOTO.P05,worldToPhoto(-64.2,-57.6),worldToPhoto(-63.0,-52.0),...commonGateApproach],
+  // MHE Zone (Right-upper row) exits into the outer aisle (x = -52.2)
+  P01:[SLOT_PHOTO.P01,worldToPhoto(-52.2,-71.5),worldToPhoto(-52.2,-61.0),worldToPhoto(-54.5,-52.5),worldToPhoto(-59.0,-47.5),...commonGateApproach],
+  P06:[SLOT_PHOTO.P06,worldToPhoto(-52.2,-66.7),worldToPhoto(-52.5,-58.5),worldToPhoto(-55.0,-52.0),worldToPhoto(-59.0,-47.5),...commonGateApproach],
+  P07:[SLOT_PHOTO.P07,worldToPhoto(-52.2,-61.9),worldToPhoto(-53.5,-55.0),worldToPhoto(-57.5,-49.0),...commonGateApproach],
+};
+const slotToGateRoutes=Object.fromEntries(
+  Object.entries(slotExitWaypoints).map(([slotId,pts])=>[slotId,fromPhoto(pts,false,`home_${slotId}-gate`)])
+);
 
 const gateToAPts=[gatePhoto,[258,286],[274,299]];
 const aToDPts=[[274,299],[298,308],[332,312],[368,308],[402,300]];
@@ -61,7 +78,7 @@ const eToDPts=[[312,352],[342,334],[372,316],[402,300]];
 const gateToCPts=[gatePhoto,[178,315],[122,354],[102,388],[126,422],[186,464],[266,518],[354,578],[425,612],[472,598],[510,575]];
 const gateToBPts=[gatePhoto,[178,315],[122,354],[102,388],[126,422],[186,464],[266,518],[354,578],[435,626],[512,660],[572,674],[638,670],[704,648],[748,625],[784,610]];
 const cToBPts=[[510,575],[498,616],[518,658],[572,674],[638,670],[704,648],[748,625],[784,610]];
-const homeToBPts=[HOME_PHOTO,[642,93],[640,125],[690,215],[710,241],[760,272],[814,309],[874,357],[940,402],[978,452],[996,515],[995,575],[966,618],[918,640],[850,640],[784,610]];
+const homeToBPts=[HOME_PHOTO,worldToPhoto(-64.2,-72.0),worldToPhoto(-63.8,-62.0),worldToPhoto(-60.5,-53.0),[690,215],[710,241],[760,272],[814,309],[874,357],[940,402],[978,452],[996,515],[995,575],[966,618],[918,640],[850,640],[784,610]];
 const homeToFPts=[...parkingExit,[348,195]];
 const fToGatePts=[[348,195],[300,224],[254,260],gatePhoto];
 
@@ -101,7 +118,10 @@ function expectedSeconds(route,speed){
 const edge=(from,to,route,speed)=>Object.freeze({from,to,route,speed,seconds:expectedSeconds(route,speed)});
 export const ROADS=Object.freeze([
   edge('home','gate',homeToGate,1.9),edge('gate','home',homeToGate.reversed(),1.9),
-  edge('home_P01','gate',p01ToGate,1.9),edge('gate','home_P01',p01ToGate.reversed(),1.9),
+  ...Object.entries(slotToGateRoutes).flatMap(([slotId,route])=>[
+    edge(`home_${slotId}`,'gate',route,1.9),
+    edge('gate',`home_${slotId}`,route.reversed(),1.9),
+  ]),
   edge('gate','A',gateToA,1.5),edge('A','gate',gateToA.reversed(),1.5),
   edge('A','D',aToD,1.5),edge('D','A',aToD.reversed(),1.5),
   edge('A','E',aToE,1.5),edge('E','A',aToE.reversed(),1.5),
@@ -116,22 +136,24 @@ export const ROADS=Object.freeze([
   edge('F','gate',fToGate,1.65),edge('gate','F',fToGate.reversed(),1.65),
 ]);
 
+export const isHomeNode=n=>n==='home'||(typeof n==='string'&&n.startsWith('home_'));
+
 // Dijkstra on expected travel time. Transfers between test surfaces never
 // route through the garage ('home'); they use internal connectors or the
 // lower perimeter / divider passage.
 export function planTravel(from,to,slotId='P03'){
-  if(slotId==='P01'||from==='home_P01'||to==='home_P01'){
-    if(from==='home')from='home_P01';
-    if(to==='home')to='home_P01';
+  const homeNode=slotId==='P03'?'home':`home_${slotId}`;
+  if(slotId!=='P03'){
+    if(from==='home')from=homeNode;
+    if(to==='home')to=homeNode;
   }
   if(from===to)return {edges:[],seconds:0,nodes:[from]};
-  const isHome=n=>n==='home'||n==='home_P01';
   const costs=new Map([[from,0]]),previous=new Map(),unvisited=new Set([from]);
   while(unvisited.size){
     let at=null,best=Infinity;for(const node of unvisited){const n=costs.get(node);if(n<best){at=node;best=n;}}
     unvisited.delete(at);if(at===to)break;
     for(const road of ROADS)if(road.from===at){
-      if(isHome(road.to)&&!isHome(to))continue;
+      if(isHomeNode(road.to)&&road.to!==to)continue;
       const next=best+road.seconds;
       if(next<(costs.get(road.to)??Infinity)){costs.set(road.to,next);previous.set(road.to,road);unvisited.add(road.to);}
     }

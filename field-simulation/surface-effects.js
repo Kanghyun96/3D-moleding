@@ -7,15 +7,29 @@ const palette={dust:[.52,.34,.13],gravel:[.18,.17,.13],water:[.26,.29,.24],mud:[
 const kindIndex={dust:0,gravel:1,water:2,mud:3};
 export class SurfaceEffects {
   constructor(random=Math.random){
-    this.random=random;this.cursor=0;this.budget=[0,0];this.previous=[0,0];this.spawned=0;
+    this.random=random;this.cursor=0;this.spawned=0;
     this.positions=new Float32Array(PARTICLE_LIMIT*3);this.sizes=new Float32Array(PARTICLE_LIMIT);
     this.alphas=new Float32Array(PARTICLE_LIMIT);this.colors=new Float32Array(PARTICLE_LIMIT*3);
     this.kinds=new Float32Array(PARTICLE_LIMIT);this.angles=new Float32Array(PARTICLE_LIMIT);
     this.particles=Array.from({length:PARTICLE_LIMIT},()=>({life:0,max:1}));
     this.ripples=Array.from({length:RIPPLE_LIMIT},()=>({life:0,max:1,x:0,z:0,y:0,radius:0,alpha:0}));
-    this.rippleCursor=0;this.rippleBudget=[0,0];
+    this.rippleCursor=0;
     this.dustTravel=0;
-    this.contactMaterials=[null,null];
+    // Multi-vehicle tracker state map
+    this.vehicleStates=new Map();
+  }
+  _getVehicleState(vehicleKey, motion){
+    let state=this.vehicleStates.get(vehicleKey);
+    if(!state){
+      state={
+        budget:[0,0],
+        previous:[motion.leftDistance,motion.rightDistance],
+        rippleBudget:[0,0],
+        contactMaterials:[null,null]
+      };
+      this.vehicleStates.set(vehicleKey,state);
+    }
+    return state;
   }
   emit(kind,x,z,yaw,side,speed,impact=0){
     const i=this.cursor++%PARTICLE_LIMIT,p=this.particles[i],r=this.random;
@@ -45,11 +59,8 @@ export class SurfaceEffects {
       this.emit('dust',x+cy*across+sy*along,z-sy*across+cy*along,yaw,side,speed);
     }
   }
-  update(dt,motion){
+  updatePhysics(dt){
     if(!(dt>0))return;
-    const distances=[motion.leftDistance,motion.rightDistance];
-    const deltas=distances.map((distance,i)=>distance-this.previous[i]);
-    this.dustTravel+=(Math.abs(deltas[0])+Math.abs(deltas[1]))*.5;
     for(const ripple of this.ripples){
       if(ripple.life<=0){ripple.alpha=0;continue;}
       ripple.life=Math.max(0,ripple.life-dt);const age=1-ripple.life/ripple.max;
@@ -63,12 +74,10 @@ export class SurfaceEffects {
       p.vy-=p.gravity*dt;
       const age=p.max-p.life;
       if(p.kind==='dust'){
-        // Billow quickly and lose horizontal momentum, then dissolve. Bound
-        // the trail by belt travel as well as real time, including 10x playback.
         p.vx*=Math.exp(-dt*4.4);p.vz*=Math.exp(-dt*4.4);p.vy*=Math.exp(-dt*.65);
         this.sizes[i]=p.initialSize+(p.puffSize-p.initialSize)*(1-Math.exp(-age*6));
         const travel=this.dustTravel-p.birthTravel;
-        if(travel>=DUST_TRAIL_LIMIT)p.life=0;
+        if(travel>=DUST_TRAIL_LIMIT){p.life=0;this.alphas[i]=0;continue;}
         const near=Math.max(0,Math.min(1,(DUST_TRAIL_LIMIT-travel)/.9));
         this.alphas[i]=p.life>0?p.opacity*(1-Math.exp(-age*18))*Math.pow(p.life/p.max,.7)*near:0;
         continue;
@@ -77,45 +86,54 @@ export class SurfaceEffects {
       const fade=Math.min(1,p.life/.22);
       this.alphas[i]=p.life>0?fade*p.opacity:0;
     }
+  }
+  emitVehicle(dt,motion,vehicleKey='default',trackHalfWidth=1.1,rearOffset=1.35){
+    if(!(dt>0)||!motion)return;
+    const vState=this._getVehicleState(vehicleKey,motion);
+    const distances=[motion.leftDistance,motion.rightDistance];
+    const deltas=distances.map((distance,i)=>distance-vState.previous[i]);
+    this.dustTravel+=(Math.abs(deltas[0])+Math.abs(deltas[1]))*.5;
+
     const sy=Math.sin(motion.yaw),cy=Math.cos(motion.yaw);
     distances.forEach((distance,index)=>{
-      const delta=deltas[index];this.previous[index]=distance;
-      // Use actual belt displacement, including in-place steering. A stationary
-      // or collision-blocked vehicle cannot accumulate a new emission budget.
+      const delta=deltas[index];vState.previous[index]=distance;
       const speed=Math.min(4,Math.abs(delta)/dt),side=index===0?-1:1;
-      if(speed<.04){this.budget[index]=0;this.rippleBudget[index]=0;return;}
-      // Rear outer edge of the belt contact footprint. The previous rear=.95
-      // point was under the tread and most short-lived droplets stayed hidden.
-      const x=motion.x+cy*side*1.2-sy*1.4,z=motion.z-sy*side*1.2-cy*1.4;
+      if(speed<.04){vState.budget[index]=0;vState.rippleBudget[index]=0;return;}
+      const x=motion.x+cy*side*trackHalfWidth-sy*rearOffset;
+      const z=motion.z-sy*side*trackHalfWidth-cy*rearOffset;
       const material=terrainAt(x,z),density=material.dust+material.gravel+material.water;
-      if(this.contactMaterials[index]!==material.kind){
-        this.contactMaterials[index]=material.kind;this.budget[index]=0;this.rippleBudget[index]=0;
+      if(vState.contactMaterials[index]!==material.kind){
+        vState.contactMaterials[index]=material.kind;vState.budget[index]=0;vState.rippleBudget[index]=0;
       }
-      if(!density){this.budget[index]=0;return;}
+      if(!density){vState.budget[index]=0;return;}
       const impact=material.water?Math.min(1,Math.abs(terrainHeight(x+sy*.6,z+cy*.6)-terrainHeight(x,z))*9):0;
       if(material.water){
-        this.rippleBudget[index]+=Math.abs(delta);
-        if(this.rippleBudget[index]>=.26){
-          this.rippleBudget[index]%=.26;
+        vState.rippleBudget[index]+=Math.abs(delta);
+        if(vState.rippleBudget[index]>=.26){
+          vState.rippleBudget[index]%=.26;
           const ripple=this.ripples[this.rippleCursor++%RIPPLE_LIMIT];
           Object.assign(ripple,{x,z,y:terrainHeight(x,z)+.026,life:1.25,max:1.25,radius:.2,alpha:0,yaw:motion.yaw,strength:1+impact*.45});
         }
-      }else this.rippleBudget[index]=0;
+      }else vState.rippleBudget[index]=0;
       if(material.dust&&!material.water&&!material.gravel){
-        this.budget[index]=Math.min(7.2,this.budget[index]+Math.abs(delta)*density*.5);
-        while(this.budget[index]>=3.6){
+        vState.budget[index]=Math.min(7.2,vState.budget[index]+Math.abs(delta)*density*.5);
+        while(vState.budget[index]>=3.6){
           const physicalSpeed=Number.isFinite(motion.speed)?Math.abs(motion.speed):speed;
-          this.emitDustPuff(x,z,motion.yaw,side,physicalSpeed);this.budget[index]-=3.6;
+          this.emitDustPuff(x,z,motion.yaw,side,physicalSpeed);vState.budget[index]-=3.6;
         }
         return;
       }
-      this.budget[index]=Math.min(10,this.budget[index]+Math.abs(delta)*density*.5);
-      while(this.budget[index]>=1){
+      vState.budget[index]=Math.min(10,vState.budget[index]+Math.abs(delta)*density*.5);
+      while(vState.budget[index]>=1){
         let kind=material.water?(this.random()<.82?'water':'mud'):material.gravel?(this.random()<.85?'gravel':'dust'):'dust';
         const physicalSpeed=material.water&&Number.isFinite(motion.speed)?Math.min(2,Math.abs(motion.speed)+Math.abs(motion.omega||0)):speed;
-        this.emit(kind,x,z,motion.yaw,side,physicalSpeed,impact);this.budget[index]--;
+        this.emit(kind,x,z,motion.yaw,side,physicalSpeed,impact);vState.budget[index]--;
       }
     });
+  }
+  update(dt,motion){
+    if(motion)this.emitVehicle(dt,motion,'default',1.2,1.4);
+    this.updatePhysics(dt);
   }
   get active(){return this.particles.reduce((n,p)=>n+(p.life>0?1:0),0);}
 }

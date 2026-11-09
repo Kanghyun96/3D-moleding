@@ -44,13 +44,11 @@ Three.js와 이미지 자산은 저장소에 포함되어 있으며 CDN 연결�
 
 | 경로 | 용도 |
 | --- | --- |
-| `index.html`, `home_fullscreen_map.html` | 최신 시뮬레이션 진입 화면 |
-| `field-simulation/` | Three.js 렌더링, 주행 모션, 경로, 사진 자산 |
+| `pages/` | HTML 뷰어 및 웹 페이지 모음 (`home_fullscreen_map.html`, `preview_dx55.html`, `preview_ctl_3d.html`, `prototype_field.html`, `index.html`) |
+| `docs/` | 프로젝트 상세 개발 계획 및 표준 규칙 (`PHASE_PLAN.md`, `AGENTS.md`) |
+| `field-simulation/` | Three.js 렌더링, 주행 모션, 경로, 사진 자산 및 장비 데이터 저장소 |
 | `field-simulation/integration/` | Streamlit Home 연결 방법과 표시 컴포넌트 |
 | `field-simulation/verification/` | 주행·충돌·화면 맞춤 검증 코드 및 결과 |
-| `preview_ctl_3d.html` | 기존 CTL 장비 외형 뷰어 |
-| `preview_dx55.html` | Doosan DX-55 굴착기 3D 모델 및 스케일·변환 튜닝 스튜디오 |
-| `prototype_field.html` | 초기 레이아웃 |
 | `picture/` | 기존 시험장·장비 참조 이미지 및 `DX-55.glb` 고정밀 3D 모델 |
 
 [구현과 검증 상세](field-simulation/README.md) · [Home 연결 안내](field-simulation/integration/README.md)

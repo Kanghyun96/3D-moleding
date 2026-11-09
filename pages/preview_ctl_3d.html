@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TrackVision AI — Bobcat CTL 3D Miniature Studio</title>
+  <title>TrackVision AI ??Bobcat CTL 3D Miniature Studio</title>
   <style>
     * {
       margin: 0;
@@ -37,7 +37,7 @@
       height: 100vh;
     }
 
-    /* 좌측 메인 3D 프리뷰 스테이지 */
+    /* 醫뚯륫 硫붿씤 3D ?꾨━酉??ㅽ뀒?댁? */
     .stage-container {
       position: relative;
       width: 100%;
@@ -47,9 +47,9 @@
       transition: background 0.3s ease;
     }
 
-    /* 실제 필드시험장 노면 배경 모드 */
+    /* ?ㅼ젣 ?꾨뱶?쒗뿕???몃㈃ 諛곌꼍 紐⑤뱶 */
     .stage-container.terrain-mode {
-      background-image: url("picture/trackvision_terrain_3d_sim.jpg");
+      background-image: url("../picture/trackvision_terrain_3d_sim.jpg");
       background-size: cover;
       background-position: center 62%;
     }
@@ -65,7 +65,7 @@
       cursor: grabbing;
     }
 
-    /* 상단 타이틀 배지 */
+    /* ?곷떒 ??댄? 諛곗? */
     .stage-header {
       position: absolute;
       top: 20px;
@@ -103,7 +103,7 @@
       margin-top: 4px;
     }
 
-    /* 하단 8방향 빠른 회전 컴퍼스 바 */
+    /* ?섎떒 8諛⑺뼢 鍮좊Ⅸ ?뚯쟾 而댄띁??諛?*/
     .compass-bar {
       position: absolute;
       bottom: 24px;
@@ -143,7 +143,7 @@
       box-shadow: 0 2px 10px rgba(234, 88, 12, 0.5);
     }
 
-    /* 우측 컨트롤 & 레퍼런스 비교 사이드 패널 */
+    /* ?곗륫 而⑦듃濡?& ?덊띁?곗뒪 鍮꾧탳 ?ъ씠???⑤꼸 */
     .control-sidebar {
       background: #f8fafc;
       border-left: 1px solid var(--border-subtle);
@@ -253,54 +253,54 @@
 <body>
 
   <div class="studio-layout">
-    <!-- 좌측 3D 미니어처 인터랙티브 캔버스 -->
+    <!-- 醫뚯륫 3D 誘몃땲?댁쿂 ?명꽣?숉떚釉?罹붾쾭??-->
     <div class="stage-container" id="stageContainer">
       <div class="stage-header">
-        <h1>Bobcat CTL 3D 미니어처 <span>화이트 프레임 & 로고 디테일 업그레이드</span></h1>
-        <p>마우스로 드래그하거나 하단 방향 버튼(특히 ↑ 북(후면), ↗ 북동, ↙ 남서)을 눌러 화이트 프레임과 Bobcat 로고를 확인해 보세요.</p>
+        <h1>Bobcat CTL 3D 誘몃땲?댁쿂 <span>?붿씠???꾨젅??& 濡쒓퀬 ?뷀뀒???낃렇?덉씠??/span></h1>
+        <p>留덉슦?ㅻ줈 ?쒕옒洹명븯嫄곕굹 ?섎떒 諛⑺뼢 踰꾪듉(?뱁엳 ??遺??꾨㈃), ??遺곷룞, ???⑥꽌)???뚮윭 ?붿씠???꾨젅?꾧낵 Bobcat 濡쒓퀬瑜??뺤씤??蹂댁꽭??</p>
       </div>
 
       <canvas id="ctlCanvas"></canvas>
 
-      <!-- 8방향 회전 프리셋 바 -->
+      <!-- 8諛⑺뼢 ?뚯쟾 ?꾨━??諛?-->
       <div class="compass-bar">
-        <button class="dir-btn" data-angle="180">↑ 북 (후면 로고)</button>
-        <button class="dir-btn" data-angle="225">↗ 북동 (후측면)</button>
-        <button class="dir-btn" data-angle="270">→ 동 (우측면)</button>
-        <button class="dir-btn" data-angle="315">↘ 남동</button>
-        <button class="dir-btn" data-angle="0">↓ 남 (정면)</button>
-        <button class="dir-btn active" data-angle="135">↖ 북서 (후측면 로고)</button>
-        <button class="dir-btn" data-angle="90">← 서 (좌측면)</button>
-        <button class="dir-btn" data-angle="42">↙ 남서 (전측면)</button>
+        <button class="dir-btn" data-angle="180">??遺?(?꾨㈃ 濡쒓퀬)</button>
+        <button class="dir-btn" data-angle="225">??遺곷룞 (?꾩륫硫?</button>
+        <button class="dir-btn" data-angle="270">????(?곗륫硫?</button>
+        <button class="dir-btn" data-angle="315">???⑤룞</button>
+        <button class="dir-btn" data-angle="0">????(?뺣㈃)</button>
+        <button class="dir-btn active" data-angle="135">??遺곸꽌 (?꾩륫硫?濡쒓퀬)</button>
+        <button class="dir-btn" data-angle="90">????(醫뚯륫硫?</button>
+        <button class="dir-btn" data-angle="42">???⑥꽌 (?꾩륫硫?</button>
       </div>
     </div>
 
-    <!-- 우측 컨트롤 및 원본 비교 패널 -->
+    <!-- ?곗륫 而⑦듃濡?諛??먮낯 鍮꾧탳 ?⑤꼸 -->
     <aside class="control-sidebar">
       <div class="panel-card">
         <div class="panel-title">
-          <span>🎮 실시간 3D 자세 및 카메라 제어</span>
+          <span>?렜 ?ㅼ떆媛?3D ?먯꽭 諛?移대찓???쒖뼱</span>
         </div>
 
         <div class="control-row">
           <div class="control-label">
-            <span>장비 회전 각도 (Yaw)</span>
-            <b id="yawVal">135°</b>
+            <span>?λ퉬 ?뚯쟾 媛곷룄 (Yaw)</span>
+            <b id="yawVal">135째</b>
           </div>
           <input type="range" id="yawSlider" min="0" max="360" value="135" step="1">
         </div>
 
         <div class="control-row">
           <div class="control-label">
-            <span>카메라 내려다보기 각도 (Pitch)</span>
-            <b id="pitchVal">28° (시험장 기준)</b>
+            <span>移대찓???대젮?ㅻ낫湲?媛곷룄 (Pitch)</span>
+            <b id="pitchVal">28째 (?쒗뿕??湲곗?)</b>
           </div>
           <input type="range" id="pitchSlider" min="10" max="65" value="28" step="1">
         </div>
 
         <div class="control-row">
           <div class="control-label">
-            <span>미니어처 배율 (Scale)</span>
+            <span>誘몃땲?댁쿂 諛곗쑉 (Scale)</span>
             <b id="scaleVal">105%</b>
           </div>
           <input type="range" id="scaleSlider" min="35" max="150" value="105" step="1">
@@ -308,8 +308,8 @@
 
         <div class="control-row">
           <div class="control-label">
-            <span>리프트 암 & 버킷 높이</span>
-            <b id="armVal">주행 자세 (낮음)</b>
+            <span>由ы봽????& 踰꾪궥 ?믪씠</span>
+            <b id="armVal">二쇳뻾 ?먯꽭 (??쓬)</b>
           </div>
           <input type="range" id="armSlider" min="0" max="100" value="8" step="1">
         </div>
@@ -317,27 +317,27 @@
 
       <div class="panel-card">
         <div class="panel-title">
-          <span>⚙️ 주행 동작 & 배경 테스트</span>
+          <span>?숋툘 二쇳뻾 ?숈옉 & 諛곌꼍 ?뚯뒪??/span>
         </div>
         <div class="toggle-grid">
-          <button class="action-btn active" id="trackRollBtn">고무트랙 주행: ON</button>
-          <button class="action-btn" id="turntableBtn">360° 자동 회전: OFF</button>
-          <button class="action-btn" id="bgModeBtn">배경: 스튜디오 그레이</button>
-          <button class="action-btn" id="multiViewBtn">8방향 원형 배치: OFF</button>
+          <button class="action-btn active" id="trackRollBtn">怨좊Т?몃옓 二쇳뻾: ON</button>
+          <button class="action-btn" id="turntableBtn">360째 ?먮룞 ?뚯쟾: OFF</button>
+          <button class="action-btn" id="bgModeBtn">諛곌꼍: ?ㅽ뒠?붿삤 洹몃젅??/button>
+          <button class="action-btn" id="multiViewBtn">8諛⑺뼢 ?먰삎 諛곗튂: OFF</button>
         </div>
       </div>
 
       <div class="panel-card">
         <div class="panel-title">
-          <span>📸 제공해주신 원본 레퍼런스 비교</span>
+          <span>?벝 ?쒓났?댁＜???먮낯 ?덊띁?곗뒪 鍮꾧탳</span>
         </div>
         <div class="ref-img-box">
-          <img src="picture/bobcat_ctl_ref.jpg" alt="Bobcat CTL Reference">
+          <img src="../picture/bobcat_ctl_ref.jpg" alt="Bobcat CTL Reference">
         </div>
         <ul class="spec-list" style="margin-top: 10px;">
-          <li><b>퓨어 화이트 프레임</b>: 측면 타워·리프트 암·하단 사이드 스커트·상단 크로스바 고명도 화이트 적용</li>
-          <li><b>후면 Bobcat 로고</b>: 오렌지 도어 중앙 퓨마(고양이) 심볼 + <b>Bobcat</b> 타이포그래피 + 우측 상단 배지</li>
-          <li><b>측면 프레임 데칼</b>: 화이트 암 측면 고양이 로고 + <b>Bobcat</b> 레터링 + 오렌지/블랙 스트라이프</li>
+          <li><b>?⑥뼱 ?붿씠???꾨젅??/b>: 痢〓㈃ ??뙿룸━?꾪듃 ?붋룻븯???ъ씠???ㅼ빱?맞룹긽???щ줈?ㅻ컮 怨좊챸???붿씠???곸슜</li>
+          <li><b>?꾨㈃ Bobcat 濡쒓퀬</b>: ?ㅻ젋吏 ?꾩뼱 以묒븰 ?⑤쭏(怨좎뼇?? ?щ낵 + <b>Bobcat</b> ??댄룷洹몃옒??+ ?곗륫 ?곷떒 諛곗?</li>
+          <li><b>痢〓㈃ ?꾨젅???곗뭡</b>: ?붿씠????痢〓㈃ 怨좎뼇??濡쒓퀬 + <b>Bobcat</b> ?덊꽣留?+ ?ㅻ젋吏/釉붾옓 ?ㅽ듃?쇱씠??/li>
         </ul>
       </div>
     </aside>
@@ -345,15 +345,15 @@
 
   <script>
     /**
-     * TrackVision AI — Pure Vanilla JS 3D Miniature Renderer (Bobcat CTL v2)
-     * - 고명도 퓨어 화이트 리프트 암 & 사이드 프레임 구조 강화
-     * - 후면 오렌지 테일게이트 & 측면 화이트 암에 Bobcat 고양이 심볼 + Bobcat 레터링 3D 투영 매핑
+     * TrackVision AI ??Pure Vanilla JS 3D Miniature Renderer (Bobcat CTL v2)
+     * - 怨좊챸???⑥뼱 ?붿씠??由ы봽????& ?ъ씠???꾨젅??援ъ“ 媛뺥솕
+     * - ?꾨㈃ ?ㅻ젋吏 ?뚯씪寃뚯씠??& 痢〓㈃ ?붿씠???붿뿉 Bobcat 怨좎뼇???щ낵 + Bobcat ?덊꽣留?3D ?ъ쁺 留ㅽ븨
      */
     const canvas = document.getElementById('ctlCanvas');
     const ctx = canvas.getContext('2d');
 
     const state = {
-      yaw: 135,         // 초기 각도: 후면 로고와 측면 화이트 프레임이 동시에 잘 보이는 135도(후측면)
+      yaw: 135,         // 珥덇린 媛곷룄: ?꾨㈃ 濡쒓퀬? 痢〓㈃ ?붿씠???꾨젅?꾩씠 ?숈떆????蹂댁씠??135???꾩륫硫?
       pitch: 28,
       scale: 1.05,
       armLift: 0.08,
@@ -367,7 +367,7 @@
     };
 
     // =========================================================================
-    // 고해상도 오프스크린 데칼 텍스처 생성 (후면 오렌지 도어 & 측면 화이트 암)
+    // 怨좏빐?곷룄 ?ㅽ봽?ㅽ겕由??곗뭡 ?띿뒪泥??앹꽦 (?꾨㈃ ?ㅻ젋吏 ?꾩뼱 & 痢〓㈃ ?붿씠????
     // =========================================================================
     function drawBobcatHeadIcon(g, cx, cy, size, color) {
       g.save();
@@ -376,35 +376,28 @@
       g.scale(s, s);
       g.fillStyle = color;
 
-      // Bobcat 시그니처 기하학적 고양이(Lynx/Bobcat) 헤드 실루엣
-      g.beginPath();
+      // Bobcat ?쒓렇?덉쿂 湲고븯?숈쟻 怨좎뼇??Lynx/Bobcat) ?ㅻ뱶 ?ㅻ（??      g.beginPath();
       g.moveTo(-42, -18);
-      g.lineTo(-48, -46); // 좌측 귀 끝
-      g.lineTo(-20, -30);
+      g.lineTo(-48, -46); // 醫뚯륫 洹 ??      g.lineTo(-20, -30);
       g.lineTo(12, -30);
-      g.lineTo(38, -46);  // 우측 귀 끝
-      g.lineTo(34, -16);
-      g.lineTo(48, 2);    // 우측 볼 털(Cheek tuft)
+      g.lineTo(38, -46);  // ?곗륫 洹 ??      g.lineTo(34, -16);
+      g.lineTo(48, 2);    // ?곗륫 蹂???Cheek tuft)
       g.lineTo(30, 18);
       g.lineTo(38, 28);
-      g.lineTo(14, 38);   // 턱 끝
-      g.lineTo(-16, 38);
+      g.lineTo(14, 38);   // ????      g.lineTo(-16, 38);
       g.lineTo(-34, 24);
-      g.lineTo(-48, 6);   // 좌측 볼 털
-      g.closePath();
+      g.lineTo(-48, 6);   // 醫뚯륫 蹂???      g.closePath();
       g.fill();
 
-      // 눈 & 코 음각 컷아웃 (바탕색으로 비우기)
+      // ??& 肄??뚭컖 而룹븘??(諛뷀깢?됱쑝濡?鍮꾩슦湲?
       g.globalCompositeOperation = 'destination-out';
-      // 좌측 눈
-      g.beginPath();
+      // 醫뚯륫 ??      g.beginPath();
       g.moveTo(-24, -8); g.lineTo(-6, -2); g.lineTo(-18, 4); g.closePath();
       g.fill();
-      // 우측 눈
-      g.beginPath();
+      // ?곗륫 ??      g.beginPath();
       g.moveTo(22, -8); g.lineTo(6, -2); g.lineTo(18, 4); g.closePath();
       g.fill();
-      // 코 & 입 라인
+      // 肄?& ???쇱씤
       g.beginPath();
       g.moveTo(-8, 14); g.lineTo(8, 14); g.lineTo(0, 24); g.closePath();
       g.fill();
@@ -412,32 +405,31 @@
       g.restore();
     }
 
-    // 1) 후면 오렌지 테일게이트 전용 고해상도 텍스처 (512 x 280)
+    // 1) ?꾨㈃ ?ㅻ젋吏 ?뚯씪寃뚯씠???꾩슜 怨좏빐?곷룄 ?띿뒪泥?(512 x 280)
     const rearDecalCanvas = document.createElement('canvas');
     rearDecalCanvas.width = 512;
     rearDecalCanvas.height = 280;
     (function buildRearDecal() {
       const g = rearDecalCanvas.getContext('2d');
-      // 오렌지 도어 베이스 그라데이션
-      const grad = g.createLinearGradient(0, 0, 0, 280);
+      // ?ㅻ젋吏 ?꾩뼱 踰좎씠??洹몃씪?곗씠??      const grad = g.createLinearGradient(0, 0, 0, 280);
       grad.addColorStop(0, '#f97316');
       grad.addColorStop(0.5, '#ea580c');
       grad.addColorStop(1, '#c2410c');
       g.fillStyle = grad;
       g.fillRect(0, 0, 512, 280);
 
-      // 외곽 다크 프레임 몰딩
+      // ?멸낸 ?ㅽ겕 ?꾨젅??紐곕뵫
       g.strokeStyle = '#1e2228';
       g.lineWidth = 10;
       g.strokeRect(5, 5, 502, 270);
 
-      // 상단 가로 음각 라인 & 우측 모델 배지 포켓 (레퍼런스 사진 상단 검은 바 + 흰색 배지)
+      // ?곷떒 媛濡??뚭컖 ?쇱씤 & ?곗륫 紐⑤뜽 諛곗? ?ъ폆 (?덊띁?곗뒪 ?ъ쭊 ?곷떒 寃? 諛?+ ?곗깋 諛곗?)
       g.fillStyle = '#23272e';
       g.beginPath();
       g.roundRect(36, 34, 440, 44, 8);
       g.fill();
 
-      // 상단 좌측 리어 테일램프 (붉은 LED) & 우측 은색/흰색 모델명 배지
+      // ?곷떒 醫뚯륫 由ъ뼱 ?뚯씪?⑦봽 (遺됱? LED) & ?곗륫 ????곗깋 紐⑤뜽紐?諛곗?
       g.fillStyle = '#dc2626';
       g.fillRect(52, 46, 46, 18);
       g.fillStyle = '#f8fafc';
@@ -446,11 +438,11 @@
       g.font = '900 13px "Pretendard", "Segoe UI", sans-serif';
       g.fillText('T76', 371, 60);
 
-      // 우측 도어 래치 핸들
+      // ?곗륫 ?꾩뼱 ?섏튂 ?몃뱾
       g.fillStyle = '#94a3b8';
       g.fillRect(432, 46, 26, 18);
 
-      // 중앙 하단: 흰색 Bobcat 고양이 헤드 로고 + "Bobcat" 굵은 레터링 (크고 선명하게!)
+      // 以묒븰 ?섎떒: ?곗깋 Bobcat 怨좎뼇???ㅻ뱶 濡쒓퀬 + "Bobcat" 援듭? ?덊꽣留?(?ш퀬 ?좊챸?섍쾶!)
       drawBobcatHeadIcon(g, 118, 182, 108, '#ffffff');
 
       g.fillStyle = '#ffffff';
@@ -458,21 +450,21 @@
       g.fillText('Bobcat', 178, 210);
     })();
 
-    // 2) 측면 화이트 리프트 암 전용 데칼 텍스처 (520 x 160)
+    // 2) 痢〓㈃ ?붿씠??由ы봽?????꾩슜 ?곗뭡 ?띿뒪泥?(520 x 160)
     function createSideArmDecal(isRightSide) {
       const c = document.createElement('canvas');
       c.width = 520;
       c.height = 160;
       const g = c.getContext('2d');
 
-      // 순백색 화이트 프레임 바탕 + 상하 테두리 강조
+      // ?쒕갚???붿씠???꾨젅??諛뷀깢 + ?곹븯 ?뚮몢由?媛뺤“
       g.fillStyle = '#ffffff';
       g.fillRect(0, 0, 520, 160);
       g.strokeStyle = '#cbd5e1';
       g.lineWidth = 6;
       g.strokeRect(3, 3, 514, 154);
 
-      // 레퍼런스 사진의 측면 오렌지 & 차콜 스트라이프 라인
+      // ?덊띁?곗뒪 ?ъ쭊??痢〓㈃ ?ㅻ젋吏 & 李⑥퐳 ?ㅽ듃?쇱씠???쇱씤
       g.fillStyle = '#1e2228';
       g.beginPath();
       if (!isRightSide) {
@@ -493,14 +485,14 @@
       g.closePath();
       g.fill();
 
-      // 후방 측면 Bobcat 고양이 아이콘 + Bobcat 텍스트 + 오렌지 모델 배지 (크기 확대)
+      // ?꾨갑 痢〓㈃ Bobcat 怨좎뼇???꾩씠肄?+ Bobcat ?띿뒪??+ ?ㅻ젋吏 紐⑤뜽 諛곗? (?ш린 ?뺣?)
       const baseX = isRightSide ? 335 : 16;
       drawBobcatHeadIcon(g, baseX + 26, 62, 46, '#111827');
       g.fillStyle = '#111827';
       g.font = 'italic 900 32px "Arial Black", "Pretendard", sans-serif';
       g.fillText('Bobcat', baseX + 52, 74);
 
-      // 하단 오렌지 모델 스트립 (T76)
+      // ?섎떒 ?ㅻ젋吏 紐⑤뜽 ?ㅽ듃由?(T76)
       g.fillStyle = '#ea580c';
       g.fillRect(baseX + 52, 84, 96, 26);
       g.fillStyle = '#ffffff';
@@ -512,7 +504,7 @@
     const leftArmDecal = createSideArmDecal(false);
     const rightArmDecal = createSideArmDecal(true);
 
-    // UI 엘리먼트 연결
+    // UI ?섎━癒쇳듃 ?곌껐
     const yawSlider = document.getElementById('yawSlider');
     const pitchSlider = document.getElementById('pitchSlider');
     const scaleSlider = document.getElementById('scaleSlider');
@@ -526,11 +518,11 @@
     function syncUI() {
       const normYaw = ((Math.round(state.yaw) % 360) + 360) % 360;
       yawSlider.value = normYaw;
-      yawVal.textContent = normYaw + '°';
+      yawVal.textContent = normYaw + '째';
       pitchSlider.value = Math.round(state.pitch);
-      pitchVal.textContent = Math.round(state.pitch) + '°';
+      pitchVal.textContent = Math.round(state.pitch) + '째';
       scaleVal.textContent = Math.round(state.scale * 100) + '%';
-      armVal.textContent = state.armLift < 0.25 ? '주행 자세 (낮음)' : (state.armLift > 0.7 ? '최대 인양' : '작업 자세 (' + Math.round(state.armLift * 100) + '%)');
+      armVal.textContent = state.armLift < 0.25 ? '二쇳뻾 ?먯꽭 (??쓬)' : (state.armLift > 0.7 ? '理쒕? ?몄뼇' : '?묒뾽 ?먯꽭 (' + Math.round(state.armLift * 100) + '%)');
 
       dirBtns.forEach((btn) => {
         const target = Number(btn.dataset.angle);
@@ -553,26 +545,26 @@
     document.getElementById('trackRollBtn').addEventListener('click', (e) => {
       state.trackRoll = !state.trackRoll;
       e.currentTarget.classList.toggle('active', state.trackRoll);
-      e.currentTarget.textContent = '고무트랙 주행: ' + (state.trackRoll ? 'ON' : 'OFF');
+      e.currentTarget.textContent = '怨좊Т?몃옓 二쇳뻾: ' + (state.trackRoll ? 'ON' : 'OFF');
     });
 
     document.getElementById('turntableBtn').addEventListener('click', (e) => {
       state.turntable = !state.turntable;
       e.currentTarget.classList.toggle('active', state.turntable);
-      e.currentTarget.textContent = '360° 자동 회전: ' + (state.turntable ? 'ON' : 'OFF');
+      e.currentTarget.textContent = '360째 ?먮룞 ?뚯쟾: ' + (state.turntable ? 'ON' : 'OFF');
     });
 
     document.getElementById('bgModeBtn').addEventListener('click', (e) => {
       const stage = document.getElementById('stageContainer');
       const isTerrain = stage.classList.toggle('terrain-mode');
       e.currentTarget.classList.toggle('active', isTerrain);
-      e.currentTarget.textContent = isTerrain ? '배경: 실제 시험장 노면' : '배경: 스튜디오 그레이';
+      e.currentTarget.textContent = isTerrain ? '諛곌꼍: ?ㅼ젣 ?쒗뿕???몃㈃' : '諛곌꼍: ?ㅽ뒠?붿삤 洹몃젅??;
     });
 
     document.getElementById('multiViewBtn').addEventListener('click', (e) => {
       state.multiView = !state.multiView;
       e.currentTarget.classList.toggle('active', state.multiView);
-      e.currentTarget.textContent = '8방향 원형 배치: ' + (state.multiView ? 'ON' : 'OFF');
+      e.currentTarget.textContent = '8諛⑺뼢 ?먰삎 諛곗튂: ' + (state.multiView ? 'ON' : 'OFF');
     });
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -596,7 +588,7 @@
     canvas.addEventListener('pointerup', () => { state.isDragging = false; });
 
     // =========================================================================
-    // 3D 수학 및 폴리곤 빌더 유틸리티
+    // 3D ?섑븰 諛??대━怨?鍮뚮뜑 ?좏떥由ы떚
     // =========================================================================
     function vec3(x, y, z) { return { x, y, z }; }
     function sub3(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
@@ -681,12 +673,12 @@
     }
 
     // =========================================================================
-    // Bobcat CTL 3D 메쉬 조립 (화이트 프레임 볼륨 대폭 강화)
+    // Bobcat CTL 3D 硫붿돩 議곕┰ (?붿씠???꾨젅??蹂쇰ⅷ ???媛뺥솕)
     // =========================================================================
     function buildBobcatCTLMesh(armLift = 0.08, trackPhase = 0) {
       const faces = [];
 
-      // 순백색(Pure Bright White)으로 그림자에서도 선명한 흰색 유지
+      // ?쒕갚??Pure Bright White)?쇰줈 洹몃┝?먯뿉?쒕룄 ?좊챸???곗깋 ?좎?
       const C_WHITE = '#ffffff';
       const C_ORANGE = '#ea580c';
       const C_CAB = '#272b33';
@@ -697,7 +689,7 @@
       const C_BUCKET = '#252930';
       const C_CHROME = '#e2e8f0';
 
-      // 1. 좌/우 삼각 고무트랙(Rubber Track) 및 롤러
+      // 1. 醫????쇨컖 怨좊Т?몃옓(Rubber Track) 諛?濡ㅻ윭
       [-1, 1].forEach((side) => {
         const xIn = side * 0.58;
         const xOut = side * 0.95;
@@ -778,11 +770,11 @@
         }
       });
 
-      // 2. 하부 메인 차체 및 화이트 사이드 바디 스커트 (트랙 위쪽 흰색 차체 라인)
+      // 2. ?섎? 硫붿씤 李⑥껜 諛??붿씠???ъ씠??諛붾뵒 ?ㅼ빱??(?몃옓 ?꾩そ ?곗깋 李⑥껜 ?쇱씤)
       addBox(faces, -0.57, 0.18, -1.05, 0.57, 0.52, 0.88, C_STEEL);
       addBox(faces, -0.46, 0.22, 0.88, 0.46, 0.42, 1.05, '#1b1e23');
 
-      // 3. 후면 오렌지 테일게이트 & 상단 블랙 라디에이터 그릴
+      // 3. ?꾨㈃ ?ㅻ젋吏 ?뚯씪寃뚯씠??& ?곷떒 釉붾옓 ?쇰뵒?먯씠??洹몃┫
       addBox(faces, -0.58, 0.20, -1.25, 0.58, 0.35, -1.02, '#181b20');
       addBox(faces, -0.53, 0.35, -1.24, 0.53, 1.00, -0.95, {
         base: C_ORANGE,
@@ -792,14 +784,14 @@
         right: '#d9480f'
       }, 'tailgate');
 
-      // 후면 상단 블랙 엔진 방열 그릴 (화이트 프레임 사이에 선명하게 안착)
+      // ?꾨㈃ ?곷떒 釉붾옓 ?붿쭊 諛⑹뿴 洹몃┫ (?붿씠???꾨젅???ъ씠???좊챸?섍쾶 ?덉갑)
       const grillePts = [
         vec3(-0.52, 1.00, -1.20), vec3(0.52, 1.00, -1.20), vec3(0.52, 1.00, -0.42), vec3(-0.52, 1.00, -0.42),
         vec3(-0.48, 1.12, -1.10), vec3(0.48, 1.12, -1.10), vec3(0.48, 1.18, -0.42), vec3(-0.48, 1.18, -0.42)
       ];
       addHexahedron(faces, grillePts, '#1e2228', 'grille');
 
-      // 4. 차콜 블랙 ROPS 캐빈
+      // 4. 李⑥퐳 釉붾옓 ROPS 罹먮퉰
       const cabPts = [
         vec3(-0.47, 0.54, -0.45), vec3(0.47, 0.54, -0.45), vec3(0.47, 0.54, 0.72), vec3(-0.47, 0.54, 0.72),
         vec3(-0.43, 1.63, -0.38), vec3(0.43, 1.63, -0.38), vec3(0.43, 1.56, 0.46), vec3(-0.43, 1.56, 0.46)
@@ -812,7 +804,7 @@
       addBox(faces,  0.25, 1.50, 0.45,  0.39, 1.57, 0.49, '#f8fafc');
 
       // -----------------------------------------------------------------------
-      // 5. ★ 퓨어 화이트 프레임 & 리프트 암 구조 (두께와 면적을 레퍼런스처럼 대폭 강조!)
+      // 5. ???⑥뼱 ?붿씠???꾨젅??& 由ы봽????援ъ“ (?먭퍡? 硫댁쟻???덊띁?곗뒪泥섎읆 ???媛뺤“!)
       // -----------------------------------------------------------------------
       const liftAngle = armLift * 0.52;
       const cosA = Math.cos(liftAngle);
@@ -831,10 +823,10 @@
         const ax0 = side < 0 ? -0.74 : 0.49;
         const ax1 = side < 0 ? -0.49 : 0.74;
 
-        // 5-0) 하단 화이트 사이드 바디 가드 (트랙 바로 위를 감싸는 흰색 차체 프레임)
+        // 5-0) ?섎떒 ?붿씠???ъ씠??諛붾뵒 媛??(?몃옓 諛붾줈 ?꾨? 媛먯떥???곗깋 李⑥껜 ?꾨젅??
         addBox(faces, ax0 + 0.02, 0.40, -1.18, ax1 - 0.02, 0.62, 0.55, C_WHITE, '', true);
 
-        // 5-1) 후방 수직 화이트 타워 기둥 (리프트 암과 Z축이 겹치지 않도록 z: -1.22 ~ -0.68 구간에 정렬)
+        // 5-1) ?꾨갑 ?섏쭅 ?붿씠?????湲곕뫁 (由ы봽???붽낵 Z異뺤씠 寃뱀튂吏 ?딅룄濡?z: -1.22 ~ -0.68 援ш컙???뺣젹)
         const tx0 = side < 0 ? ax0 + 0.012 : ax0;
         const tx1 = side < 0 ? ax1 : ax1 - 0.012;
         const towerPts = [
@@ -843,7 +835,7 @@
         ];
         addHexahedron(faces, towerPts, C_WHITE, side < 0 ? 'tower_left' : 'tower_right', true);
 
-        // 5-2) 측면 메인 화이트 리프트 암 (타워 앞쪽 z: -0.68 ~ +0.30 구간으로 분리하여 360도 어느 각도에서도 가려짐 없음!)
+        // 5-2) 痢〓㈃ 硫붿씤 ?붿씠??由ы봽????(????욎そ z: -0.68 ~ +0.30 援ш컙?쇰줈 遺꾨━?섏뿬 360???대뒓 媛곷룄?먯꽌??媛?ㅼ쭚 ?놁쓬!)
         const pRearBot = pivotArm(0.92, -0.68);
         const pRearTop = pivotArm(1.36, -0.68);
         const pMidBot  = pivotArm(0.56,  0.28);
@@ -858,7 +850,7 @@
           vec3(ax1, pMidTop.y,  pMidTop.z),  vec3(ax0, pMidTop.y,  pMidTop.z)
         ], C_WHITE, side < 0 ? 'arm_left' : 'arm_right', true);
 
-        // 전방 하향 화이트 암 구간 (중간 꺾임부 -> 버킷 피벗)
+        // ?꾨갑 ?섑뼢 ?붿씠????援ш컙 (以묎컙 爰얠엫遺 -> 踰꾪궥 ?쇰쿁)
         addHexahedron(faces, [
           vec3(ax0, pMidBot.y, pMidBot.z), vec3(ax1, pMidBot.y, pMidBot.z),
           vec3(ax1, pFrtBot.y, pFrtBot.z), vec3(ax0, pFrtBot.y, pFrtBot.z),
@@ -866,7 +858,7 @@
           vec3(ax1, pFrtTop.y, pFrtTop.z), vec3(ax0, pFrtTop.y, pFrtTop.z)
         ], C_WHITE, '', true);
 
-        // 5-3) 측면 유압 실린더 (블랙 배럴 + 크롬 로드)
+        // 5-3) 痢〓㈃ ?좎븬 ?ㅻ┛??(釉붾옓 諛곕윺 + ?щ＼ 濡쒕뱶)
         const cylX0 = side < 0 ? -0.71 : 0.53;
         const cylX1 = side < 0 ? -0.53 : 0.71;
         const cMount = pivotArm(0.76, 0.08);
@@ -884,17 +876,17 @@
         ], C_CHROME);
       });
 
-      // 5-4) 후방 상단 화이트 아치형 크로스바 핸들 (레퍼런스 사진 후면 상단의 선명한 흰색 가로바!)
+      // 5-4) ?꾨갑 ?곷떒 ?붿씠???꾩튂???щ줈?ㅻ컮 ?몃뱾 (?덊띁?곗뒪 ?ъ쭊 ?꾨㈃ ?곷떒???좊챸???곗깋 媛濡쒕컮!)
       const tieBot = pivotArm(1.34, -1.04);
       const tieTop = pivotArm(1.45, -1.02);
       addBox(faces, -0.73, tieBot.y, tieBot.z - 0.06, 0.73, tieTop.y, tieTop.z + 0.06, C_WHITE, '', true);
 
-      // 전방 화이트 암 연결 브릿지
+      // ?꾨갑 ?붿씠?????곌껐 釉뚮┸吏
       const frtCross = pivotArm(0.34, 0.96);
       addBox(faces, -0.62, frtCross.y - 0.07, frtCross.z - 0.07, 0.62, frtCross.y + 0.07, frtCross.z + 0.07, C_WHITE, '', true);
       addBox(faces, -0.10, frtCross.y - 0.02, frtCross.z, 0.10, frtCross.y + 0.16, frtCross.z + 0.22, '#1e2229');
 
-      // 6. 전면 로더 버킷
+      // 6. ?꾨㈃ 濡쒕뜑 踰꾪궥
       const bPivot = pivotArm(0.22, 1.06);
       const by = bPivot.y - 0.16;
       const bz = bPivot.z;
@@ -937,10 +929,10 @@
     }
 
     // =========================================================================
-    // 3D 쿼드 표면 위에 오프스크린 텍스처(Bobcat 로고/레터링)를 투영 매핑하는 함수
+    // 3D 荑쇰뱶 ?쒕㈃ ?꾩뿉 ?ㅽ봽?ㅽ겕由??띿뒪泥?Bobcat 濡쒓퀬/?덊꽣留?瑜??ъ쁺 留ㅽ븨?섎뒗 ?⑥닔
     // =========================================================================
     function drawTexturedQuad(ctx, img, p0, p1, p2, p3, subdivide = 6) {
-      // p0(좌상), p1(우상), p2(우하), p3(좌하)를 세분화하여 왜곡 없는 3D 원근 텍스처 매핑 수행
+      // p0(醫뚯긽), p1(?곗긽), p2(?고븯), p3(醫뚰븯)瑜??몃텇?뷀븯???쒓끝 ?녿뒗 3D ?먭렐 ?띿뒪泥?留ㅽ븨 ?섑뻾
       const w = img.width;
       const h = img.height;
 
@@ -956,7 +948,7 @@
         const sx = u0 * w;
         const sw = (u1 - u0) * w;
 
-        // 두 개의 삼각형(tL-tR-bL, tR-bR-bL)으로 나누어 아핀 변환 매핑
+        // ??媛쒖쓽 ?쇨컖??tL-tR-bL, tR-bR-bL)?쇰줈 ?섎늻???꾪? 蹂??留ㅽ븨
         drawTriangleImage(ctx, img, sx, 0, sx + sw, 0, sx, h, tL.x, tL.y, tR.x, tR.y, bL.x, bL.y);
         drawTriangleImage(ctx, img, sx + sw, 0, sx + sw, h, sx, h, tR.x, tR.y, bR.x, bR.y, bL.x, bL.y);
       }
@@ -989,16 +981,14 @@
     }
 
     // =========================================================================
-    // 단일 CTL 인스턴스 렌더링
-    // =========================================================================
+    // ?⑥씪 CTL ?몄뒪?댁뒪 ?뚮뜑留?    // =========================================================================
     function renderCTLInstance(cx, cy, yawDeg, pitchDeg, unitScale, faces) {
       const yawRad = (yawDeg * Math.PI) / 180;
       const pitchRad = (pitchDeg * Math.PI) / 180;
       const cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
       const cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
 
-      // 지면 접촉 그림자
-      ctx.save();
+      // 吏硫??묒큺 洹몃┝??      ctx.save();
       ctx.translate(cx, cy + unitScale * 0.22);
       ctx.scale(1, Math.sin(pitchRad) * 0.95 + 0.25);
       ctx.rotate(-yawRad);
@@ -1043,7 +1033,7 @@
 
         let avgZ = pVerts.reduce((acc, p) => acc + p.z, 0) / pVerts.length;
 
-        // ★ 긴 측면 리프트 암 폴리곤이 후방 타워/실린더 중심점(avgZ)보다 뒤로 밀려 글자가 가려지는 현상(Painter's Algorithm 한계) 보정
+        // ??湲?痢〓㈃ 由ы봽?????대━怨ㅼ씠 ?꾨갑 ????ㅻ┛??以묒떖??avgZ)蹂대떎 ?ㅻ줈 諛??湲?먭? 媛?ㅼ????꾩긽(Painter's Algorithm ?쒓퀎) 蹂댁젙
         if (f.tag && f.tag.startsWith('arm_left') && sinY > 0) {
           avgZ += 0.34 * sinY;
         }
@@ -1057,7 +1047,7 @@
         const diff = Math.max(0, dot3(normal, lightDir));
         const hemi = (normal.y + 1) * 0.5;
 
-        // ★ 화이트 프레임은 어떤 각도에서도 밝고 깨끗한 순백색이 살아나도록 하이키(High-Key) 셰이딩 적용!
+        // ???붿씠???꾨젅?꾩? ?대뼡 媛곷룄?먯꽌??諛앷퀬 源⑤걮???쒕갚?됱씠 ?댁븘?섎룄濡??섏씠??High-Key) ?곗씠???곸슜!
         const shade = f.isWhiteFrame
           ? (0.82 + diff * 0.16 + hemi * 0.08)
           : (0.58 + diff * 0.36 + hemi * 0.14);
@@ -1088,43 +1078,41 @@
         ctx.strokeStyle = pf.strokeColor;
         ctx.stroke();
 
-        // 1) ★ 후면 오렌지 테일게이트: 후면이 카메라를 향할 때(cosY < 0.15) 선명하게 표시
+        // 1) ???꾨㈃ ?ㅻ젋吏 ?뚯씪寃뚯씠?? ?꾨㈃??移대찓?쇰? ?ν븷 ??cosY < 0.15) ?좊챸?섍쾶 ?쒖떆
         if (pf.tag === 'tailgate_back' && cosY < 0.15) {
           const qRear = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
           drawVectorBobcatOnQuad(ctx, qRear);
         }
 
-        // 2) ★ 좌측 화이트 리프트 암 외측: 좌측면이 카메라를 향할 때(sinY > -0.05) 가려짐 없이 표시
+        // 2) ??醫뚯륫 ?붿씠??由ы봽?????몄륫: 醫뚯륫硫댁씠 移대찓?쇰? ?ν븷 ??sinY > -0.05) 媛?ㅼ쭚 ?놁씠 ?쒖떆
         if (pf.tag === 'arm_left_outer' && sinY > -0.05) {
           const qLeft = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
           drawSideVectorDecalOnQuad(ctx, qLeft, false);
         }
 
-        // 3) ★ 우측 화이트 리프트 암 외측: 우측면이 카메라를 향할 때(sinY < 0.05) 가려짐 없이 표시
+        // 3) ???곗륫 ?붿씠??由ы봽?????몄륫: ?곗륫硫댁씠 移대찓?쇰? ?ν븷 ??sinY < 0.05) 媛?ㅼ쭚 ?놁씠 ?쒖떆
         if (pf.tag === 'arm_right_inner' && sinY < 0.05) {
           const qRight = [pf.pVerts[1], pf.pVerts[2], pf.pVerts[3], pf.pVerts[0]];
           drawSideVectorDecalOnQuad(ctx, qRight, true);
         }
 
-        // 4) 캐빈 전면 유리창 & 반사광
-        if (pf.tag === 'cab_front') {
+        // 4) 罹먮퉰 ?꾨㈃ ?좊━李?& 諛섏궗愿?        if (pf.tag === 'cab_front') {
           drawQuadInset(pf.pVerts, 0.14, 0.14, '#1e293b', '#475569');
           drawQuadInset(pf.pVerts, 0.22, 0.25, 'rgba(148, 163, 184, 0.25)', null);
         }
 
-        // 5) 캐빈 좌/우 측면 보호 메쉬 창
-        if (pf.tag === 'cab_outer' || pf.tag === 'cab_inner') {
+        // 5) 罹먮퉰 醫???痢〓㈃ 蹂댄샇 硫붿돩 李?        if (pf.tag === 'cab_outer' || pf.tag === 'cab_inner') {
           drawQuadInset(pf.pVerts, 0.15, 0.16, '#15181e', '#3f4652', true);
         }
 
-        // 6) 후면 상단 블랙 방열 그릴 루버 슬롯
+        // 6) ?꾨㈃ ?곷떒 釉붾옓 諛⑹뿴 洹몃┫ 猷⑤쾭 ?щ’
         if (pf.tag === 'grille_top' && pf.pVerts.length === 4) {
           drawQuadInset(pf.pVerts, 0.12, 0.18, '#0f1217', '#2d333d', true);
         }
       });
     }
 
-    // 폴리곤 영역 밖으로 절대 1픽셀도 삐져나가지 않도록 클리핑하는 헬퍼
+    // ?대━怨??곸뿭 諛뽰쑝濡??덈? 1?쎌????먯졇?섍?吏 ?딅룄濡??대━?묓븯???ы띁
     function withQuadClip(ctx, q, fn) {
       ctx.save();
       ctx.beginPath();
@@ -1138,8 +1126,7 @@
       ctx.restore();
     }
 
-    // 3D 쿼드 UV 좌표계(0~1) 위에 직접 다각형을 그리는 벡터 렌더러
-    function drawUVPolygon(ctx, q, uvPoints, fillStyle) {
+    // 3D 荑쇰뱶 UV 醫뚰몴怨?0~1) ?꾩뿉 吏곸젒 ?ㅺ컖?뺤쓣 洹몃━??踰≫꽣 ?뚮뜑??    function drawUVPolygon(ctx, q, uvPoints, fillStyle) {
       ctx.beginPath();
       uvPoints.forEach(([u, v], idx) => {
         const p = bilerpQuad(q, u, v);
@@ -1153,7 +1140,7 @@
 
     function drawVectorBobcatCatHeadUV(ctx, q, uCenter, vCenter, uRadius, vRadius, fgColor, bgColor) {
       const mapPt = (nx, ny) => [uCenter + (nx / 50) * uRadius, vCenter + (ny / 50) * vRadius];
-      // 고양이(Lynx) 외곽 헤드 실루엣 (뾰족한 두 귀 + 좌우 볼 털 + 턱선)
+      // 怨좎뼇??Lynx) ?멸낸 ?ㅻ뱶 ?ㅻ（??(毓곗”????洹 + 醫뚯슦 蹂???+ ?깆꽑)
       const headOutline = [
         [-42, -18], [-48, -48], [-18, -30], [14, -30], [42, -48],
         [36, -16], [50, 2], [32, 18], [40, 28], [14, 40],
@@ -1161,7 +1148,7 @@
       ].map(([x, y]) => mapPt(x, y));
       drawUVPolygon(ctx, q, headOutline, fgColor);
 
-      // 날카로운 눈 & 코 음각 표현
+      // ?좎뭅濡쒖슫 ??& 肄??뚭컖 ?쒗쁽
       const leftEye = [[-26, -10], [-6, -2], [-20, 6]].map(([x, y]) => mapPt(x, y));
       const rightEye = [[24, -10], [6, -2], [18, 6]].map(([x, y]) => mapPt(x, y));
       const nose = [[-9, 14], [9, 14], [0, 26]].map(([x, y]) => mapPt(x, y));
@@ -1170,7 +1157,7 @@
       drawUVPolygon(ctx, q, nose, bgColor);
     }
 
-    // ★ 텍스트가 지정된 UV 가로폭(uSpan)과 세로폭(vHeight) 안에 100% 정확히 들어맞도록 자동 스케일링!
+    // ???띿뒪?멸? 吏?뺣맂 UV 媛濡쒗룺(uSpan)怨??몃줈??vHeight) ?덉뿉 100% ?뺥솗???ㅼ뼱留욌룄濡??먮룞 ?ㅼ??쇰쭅!
     function drawQuadFittedText(ctx, q, uStart, vCenter, uSpan, vHeight, text, color) {
       const pStart = bilerpQuad(q, uStart, vCenter);
       const pEnd   = bilerpQuad(q, uStart + uSpan, vCenter);
@@ -1185,7 +1172,7 @@
       ctx.font = `italic 900 ${baseFontPx}px "Arial Black", "Pretendard", Impact, sans-serif`;
       const measuredW = ctx.measureText(text).width || 360;
 
-      // 텍스트 1px당 3D 화면 공간 벡터 계산 -> uStart ~ (uStart + uSpan) 구간에 정확히 100% 안착!
+      // ?띿뒪??1px??3D ?붾㈃ 怨듦컙 踰≫꽣 怨꾩궛 -> uStart ~ (uStart + uSpan) 援ш컙???뺥솗??100% ?덉갑!
       const ux = (pEnd.x - pStart.x) / measuredW;
       const uy = (pEnd.y - pStart.y) / measuredW;
       const vx = (pBot.x - pTop.x) / baseFontPx;
@@ -1200,12 +1187,12 @@
 
     function drawVectorBobcatOnQuad(ctx, q) {
       withQuadClip(ctx, q, () => {
-        // 상단 블랙 가로 몰딩 바 + 좌측 적색 램프 + 우측 흰색 T76 배지
+        // ?곷떒 釉붾옓 媛濡?紐곕뵫 諛?+ 醫뚯륫 ?곸깋 ?⑦봽 + ?곗륫 ?곗깋 T76 諛곗?
         drawUVPolygon(ctx, q, [[0.09, 0.14], [0.91, 0.14], [0.91, 0.30], [0.09, 0.30]], '#1e2228');
         drawUVPolygon(ctx, q, [[0.12, 0.17], [0.23, 0.17], [0.23, 0.27], [0.12, 0.27]], '#ef4444');
         drawUVPolygon(ctx, q, [[0.71, 0.17], [0.85, 0.17], [0.85, 0.27], [0.71, 0.27]], '#ffffff');
 
-        // 중앙 하단(u: 0.16 ~ 0.84 내부): 흰색 고양이 심볼(u=0.23) + "Bobcat"(u=0.33~0.83)
+        // 以묒븰 ?섎떒(u: 0.16 ~ 0.84 ?대?): ?곗깋 怨좎뼇???щ낵(u=0.23) + "Bobcat"(u=0.33~0.83)
         drawVectorBobcatCatHeadUV(ctx, q, 0.23, 0.66, 0.085, 0.19, '#ffffff', '#ea580c');
         drawQuadFittedText(ctx, q, 0.34, 0.66, 0.48, 0.30, 'Bobcat', '#ffffff');
       });
@@ -1214,14 +1201,13 @@
     function drawSideVectorDecalOnQuad(ctx, q, isRightSide) {
       withQuadClip(ctx, q, () => {
         if (!isRightSide) {
-          // 좌측 화이트 암: 후방(u: 0.07~0.38)에 고양이 로고 + Bobcat + 오렌지 배지, 전방(u: 0.44~0.90)에 스트라이프
-          drawVectorBobcatCatHeadUV(ctx, q, 0.10, 0.42, 0.042, 0.16, '#111827', '#ffffff');
+          // 醫뚯륫 ?붿씠???? ?꾨갑(u: 0.07~0.38)??怨좎뼇??濡쒓퀬 + Bobcat + ?ㅻ젋吏 諛곗?, ?꾨갑(u: 0.44~0.90)???ㅽ듃?쇱씠??          drawVectorBobcatCatHeadUV(ctx, q, 0.10, 0.42, 0.042, 0.16, '#111827', '#ffffff');
           drawQuadFittedText(ctx, q, 0.16, 0.42, 0.21, 0.26, 'Bobcat', '#111827');
           drawUVPolygon(ctx, q, [[0.16, 0.60], [0.35, 0.60], [0.34, 0.76], [0.15, 0.76]], '#ea580c');
           drawUVPolygon(ctx, q, [[0.44, 0.32], [0.90, 0.32], [0.87, 0.50], [0.42, 0.50]], '#1e2228');
           drawUVPolygon(ctx, q, [[0.42, 0.54], [0.86, 0.54], [0.83, 0.72], [0.40, 0.72]], '#ea580c');
         } else {
-          // 우측 화이트 암: 전방(u: 0.10~0.56)에 스트라이프, 후방(u: 0.62~0.93)에 고양이 로고 + Bobcat + 오렌지 배지
+          // ?곗륫 ?붿씠???? ?꾨갑(u: 0.10~0.56)???ㅽ듃?쇱씠?? ?꾨갑(u: 0.62~0.93)??怨좎뼇??濡쒓퀬 + Bobcat + ?ㅻ젋吏 諛곗?
           drawUVPolygon(ctx, q, [[0.10, 0.32], [0.56, 0.32], [0.58, 0.50], [0.13, 0.50]], '#1e2228');
           drawUVPolygon(ctx, q, [[0.14, 0.54], [0.58, 0.54], [0.60, 0.72], [0.17, 0.72]], '#ea580c');
           drawVectorBobcatCatHeadUV(ctx, q, 0.66, 0.42, 0.042, 0.16, '#111827', '#ffffff');
@@ -1279,7 +1265,7 @@
     }
 
     // =========================================================================
-    // 메인 렌더링 루프
+    // 硫붿씤 ?뚮뜑留?猷⑦봽
     // =========================================================================
     function renderLoop() {
       const dpr = window.devicePixelRatio || 1;
@@ -1347,3 +1333,4 @@
   </script>
 </body>
 </html>
+

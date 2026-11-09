@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TrackVision — DX-55 Excavator 3D Studio Preview</title>
+  <title>TrackVision ??DX-55 Excavator 3D Studio Preview</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, html { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121820; color: #f1f5f9; }
@@ -38,78 +38,78 @@
       <canvas id="c"></canvas>
       <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
-        <span id="loading-text">DX-55 3D 모델(86MB) 로딩 중…</span>
+        <span id="loading-text">DX-55 3D 紐⑤뜽(86MB) 濡쒕뵫 以묅?/span>
       </div>
     </div>
     <aside class="control-panel">
       <div>
         <h1>Doosan DX-55 <span class="badge">Excavator</span></h1>
-        <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">5.5톤급 소형 굴착기 3D 모델 튜닝 스튜디오</p>
+        <p style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">5.5?ㅺ툒 ?뚰삎 援댁갑湲?3D 紐⑤뜽 ?쒕떇 ?ㅽ뒠?붿삤</p>
       </div>
 
       <div class="card">
-        <h2>모델 조정 (Transform)</h2>
+        <h2>紐⑤뜽 議곗젙 (Transform)</h2>
         <div class="slider-row">
-          <div class="slider-header"><span>스케일 (Scale)</span><span id="val-scale">1.95</span></div>
+          <div class="slider-header"><span>?ㅼ???(Scale)</span><span id="val-scale">1.95</span></div>
           <input id="in-scale" type="range" min="1.0" max="3.0" step="0.05" value="1.95">
         </div>
         <div class="slider-row">
-          <div class="slider-header"><span>Y 회전 (Yaw)</span><span id="val-yaw">90°</span></div>
+          <div class="slider-header"><span>Y ?뚯쟾 (Yaw)</span><span id="val-yaw">90째</span></div>
           <input id="in-yaw" type="range" min="-180" max="180" step="15" value="90">
         </div>
         <div class="slider-row">
-          <div class="slider-header"><span>바닥 오프셋 (Ground Y)</span><span id="val-y">0.00m</span></div>
+          <div class="slider-header"><span>諛붾떏 ?ㅽ봽??(Ground Y)</span><span id="val-y">0.00m</span></div>
           <input id="in-y" type="range" min="-0.5" max="0.5" step="0.01" value="0.00">
         </div>
         <div class="btn-row">
-          <button id="btn-forward-flip">전방 방향 180° 반전</button>
-          <button id="btn-reset">초기화</button>
+          <button id="btn-forward-flip">?꾨갑 諛⑺뼢 180째 諛섏쟾</button>
+          <button id="btn-reset">珥덇린??/button>
         </div>
       </div>
 
       <div class="card">
-        <h2>비교 및 시각화</h2>
+        <h2>鍮꾧탳 諛??쒓컖??/h2>
         <div class="slider-row">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="chk-grid" checked> 바닥 그리드 (1m 단위)
+            <input type="checkbox" id="chk-grid" checked> 諛붾떏 洹몃━??(1m ?⑥쐞)
           </label>
         </div>
         <div class="slider-row">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="chk-axes" checked> 좌표축 표시 (X:빨강, Y:초록, Z:파랑)
+            <input type="checkbox" id="chk-axes" checked> 醫뚰몴異??쒖떆 (X:鍮④컯, Y:珥덈줉, Z:?뚮옉)
           </label>
         </div>
         <div class="slider-row">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="chk-bobcat-box" checked> Bobcat T-870 크기 박스 비교
+            <input type="checkbox" id="chk-bobcat-box" checked> Bobcat T-870 ?ш린 諛뺤뒪 鍮꾧탳
           </label>
         </div>
         <div class="slider-row">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="chk-auto-rotate"> 자동 회전
+            <input type="checkbox" id="chk-auto-rotate"> ?먮룞 ?뚯쟾
           </label>
         </div>
       </div>
 
       <div class="card">
-        <h2>모델 제원 (실시간)</h2>
+        <h2>紐⑤뜽 ?쒖썝 (?ㅼ떆媛?</h2>
         <div class="stat-list">
-          <div class="stat-item"><div class="stat-label">전폭 (Width)</div><div id="stat-w" class="stat-value">-</div></div>
-          <div class="stat-item"><div class="stat-label">전고 (Height)</div><div id="stat-h" class="stat-value">-</div></div>
-          <div class="stat-item"><div class="stat-label">전장 (Length)</div><div id="stat-l" class="stat-value">-</div></div>
-          <div class="stat-item"><div class="stat-label">폴리곤 (Tris)</div><div class="stat-value">2,296k</div></div>
+          <div class="stat-item"><div class="stat-label">?꾪룺 (Width)</div><div id="stat-w" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">?꾧퀬 (Height)</div><div id="stat-h" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">?꾩옣 (Length)</div><div id="stat-l" class="stat-value">-</div></div>
+          <div class="stat-item"><div class="stat-label">?대━怨?(Tris)</div><div class="stat-value">2,296k</div></div>
         </div>
       </div>
 
       <div>
-        <a href="index.html" style="display:block; text-align:center; padding:10px; background:#1e293b; color:#38bdf8; border:1px solid #0284c7; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">← 필드 시험장 시뮬레이션으로 이동</a>
+        <a href="home_fullscreen_map.html" style="display:block; text-align:center; padding:10px; background:#1e293b; color:#38bdf8; border:1px solid #0284c7; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:600;">???꾨뱶 ?쒗뿕???쒕??덉씠?섏쑝濡??대룞</a>
       </div>
     </aside>
   </div>
 
   <script type="module">
-    import * as THREE from './field-simulation/vendor/three.module.js';
-    import { GLTFLoader } from './field-simulation/vendor/GLTFLoader.js';
+    import * as THREE from '../field-simulation/vendor/three.module.js';
+    import { GLTFLoader } from '../field-simulation/vendor/GLTFLoader.js';
 
     const canvas = document.getElementById('c');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -215,15 +215,15 @@
 
     const loader = new GLTFLoader();
     const candidateUrls = [
-      'field-simulation/assets/DX-55.glb',
-      'picture/DX-55.glb',
+      '../field-simulation/assets/DX-55.glb',
+      '../picture/DX-55.glb',
       '/field-simulation/assets/DX-55.glb',
       '/picture/DX-55.glb',
     ];
 
     function tryLoad(index = 0) {
       if (index >= candidateUrls.length) {
-        document.getElementById('loading-text').textContent = 'DX-55 3D 모델을 불러오지 못했습니다.';
+        document.getElementById('loading-text').textContent = 'DX-55 3D 紐⑤뜽??遺덈윭?ㅼ? 紐삵뻽?듬땲??';
         return;
       }
       const url = candidateUrls[index];
@@ -248,7 +248,7 @@
       }, (progress) => {
         if (progress.total) {
           const pct = Math.round((progress.loaded / progress.total) * 100);
-          document.getElementById('loading-text').textContent = `DX-55 3D 모델 로딩 중… ${pct}%`;
+          document.getElementById('loading-text').textContent = `DX-55 3D 紐⑤뜽 濡쒕뵫 以묅?${pct}%`;
         }
       }, (error) => {
         console.warn(`Failed loading from ${url}, trying next...`, error);
@@ -281,7 +281,7 @@
     });
     document.getElementById('in-yaw').addEventListener('input', e => {
       yawDeg = parseFloat(e.target.value);
-      document.getElementById('val-yaw').textContent = yawDeg + '°';
+      document.getElementById('val-yaw').textContent = yawDeg + '째';
       applyTransform();
     });
     document.getElementById('in-y').addEventListener('input', e => {
@@ -293,13 +293,13 @@
       yawDeg = (yawDeg + 180) % 360;
       if (yawDeg > 180) yawDeg -= 360;
       document.getElementById('in-yaw').value = yawDeg;
-      document.getElementById('val-yaw').textContent = yawDeg + '°';
+      document.getElementById('val-yaw').textContent = yawDeg + '째';
       applyTransform();
     });
     document.getElementById('btn-reset').addEventListener('click', () => {
       modelScale = 1.95; yawDeg = 90; groundYOffset = 0.0;
       document.getElementById('in-scale').value = 1.95; document.getElementById('val-scale').textContent = '1.95';
-      document.getElementById('in-yaw').value = 90; document.getElementById('val-yaw').textContent = '90°';
+      document.getElementById('in-yaw').value = 90; document.getElementById('val-yaw').textContent = '90째';
       document.getElementById('in-y').value = 0.0; document.getElementById('val-y').textContent = '0.00m';
       applyTransform();
     });
@@ -331,3 +331,4 @@
   </script>
 </body>
 </html>
+

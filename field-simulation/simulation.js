@@ -1,16 +1,15 @@
 import * as T from './vendor/three.module.js';
 import { createWorld, seeded } from './world.js';
 import { PHOTO, photoToWorld, worldToPhoto } from './photo-map.js';
-import { createCTL } from './ctl-model.js';
-import { createDX55 } from './dx55-model.js';
+import { createGLBEquipment } from './dx55-model.js';
 import { VehicleMotion } from './motion.js';
-import { groundHeight, surfaceAt, SURFACES, LOOPS } from './routes.js';
+import { groundHeight, surfaceAt, SURFACES, LOOPS, isHomeNode } from './routes.js';
 import { terrainAt } from './terrain.js';
 import { SurfaceEffects } from './surface-effects.js';
 import { createEffectView } from './effect-view.js';
 import { createSiteLighting } from './site-lighting.js';
 import { createEquipmentPanel } from './equipment-panel.js';
-import { DEFAULT_EQUIPMENT_ID } from './parking-config.js';
+import { DEFAULT_EQUIPMENT_ID, EQUIPMENTS, EQUIPMENT_IDS } from './parking-config.js';
 
 const $=id=>document.getElementById(id);
 const showError=error=>{$('loading').hidden=true;$('error').hidden=false;$('error-message').textContent=error?.message||String(error);console.error(error);};
@@ -35,24 +34,27 @@ try {
   const camera=new T.OrthographicCamera(-75,75,60,-60,.1,650);
   const world=createWorld(scene);
 
-  // Equipment 1: Bobcat T-870 (CTL) - Assigned to slot P03
-  const ctl=createCTL();
-  const motionBobcat=new VehicleMotion({slotId:'P03'});
-  scene.add(ctl.root);
+  // Instantiate all 7 GLB equipments at their dedicated parking slots (P01 ~ P07)
+  const motions={};
+  const models={};
+  const hitButtons={};
+  const modelLoadPromises=[];
 
-  // Equipment 2: Doosan DX-55 (Excavator / MHE) - Assigned to slot P01
-  const dx55=await createDX55();
-  const motionDX55=new VehicleMotion({slotId:'P01'});
-  scene.add(dx55.root);
-
-  // Both vehicles initialize precisely at their assigned slots without overlapping
-  ctl.update(motionBobcat);
-  dx55.update(motionDX55);
+  for(const id of EQUIPMENT_IDS){
+    const cfg=EQUIPMENTS[id];
+    const model=createGLBEquipment(cfg);
+    if(model.ready)modelLoadPromises.push(model.ready);
+    const motion=new VehicleMotion({slotId:cfg.parkingSlotId});
+    scene.add(model.root);
+    model.update(motion,0);
+    motions[id]=motion;
+    models[id]=model;
+  }
+  let allModelsLoaded = false;
+  Promise.allSettled(modelLoadPromises).then(()=>{ allModelsLoaded = true; });
 
   let activeEquipmentId=DEFAULT_EQUIPMENT_ID;
-  const motions={'bobcat-t870':motionBobcat,'dx-55':motionDX55};
-  const models={'bobcat-t870':ctl,'dx-55':dx55};
-  const getActiveMotion=()=>motions[activeEquipmentId]||motionBobcat;
+  const getActiveMotion=()=>motions[activeEquipmentId]||motions[DEFAULT_EQUIPMENT_ID];
 
   const panel=createEquipmentPanel({
     equipmentId:activeEquipmentId,
@@ -69,20 +71,17 @@ try {
     if(cameraMode==='follow')cameraTargets();
   }
 
-  // 2D Screen click target buttons for both equipments
-  const targetBobcat=document.createElement('button');
-  targetBobcat.className='equipment-hit-target';
-  targetBobcat.setAttribute('aria-label','Bobcat T-870 장비 정보 열기');
-  targetBobcat.title='Bobcat T-870 (CTL)';
-  container.appendChild(targetBobcat);
-  targetBobcat.onclick=()=>setActiveEquipment('bobcat-t870',true);
-
-  const targetDX55=document.createElement('button');
-  targetDX55.className='equipment-hit-target';
-  targetDX55.setAttribute('aria-label','Doosan DX-55 굴착기 정보 열기');
-  targetDX55.title='Doosan DX-55 (굴착기)';
-  container.appendChild(targetDX55);
-  targetDX55.onclick=()=>setActiveEquipment('dx-55',true);
+  // 2D Screen click target buttons for all 7 equipments
+  for(const id of EQUIPMENT_IDS){
+    const cfg=EQUIPMENTS[id];
+    const btn=document.createElement('button');
+    btn.className='equipment-hit-target';
+    btn.setAttribute('aria-label',`${cfg.name} 장비 정보 열기`);
+    btn.title=cfg.label||cfg.name;
+    container.appendChild(btn);
+    btn.onclick=()=>{btn.blur();setActiveEquipment(id,true);};
+    hitButtons[id]=btn;
+  }
 
   const lighting=createSiteLighting({container,scene,renderer,sun,fill,sky,shadow:world.shadow,photo});
   lighting.update(0,getActiveMotion());
@@ -98,14 +97,14 @@ try {
   const marks=new T.InstancedMesh(new T.BoxGeometry(.39,.007,.12),new T.MeshStandardMaterial({color:'#5e533e',transparent:true,opacity:.19,depthWrite:false,roughness:1}),1000);marks.instanceMatrix.setUsage(T.DynamicDrawUsage);marks.frustumCulled=false;
   const stamp=new T.Object3D();stamp.scale.setScalar(0);stamp.updateMatrix();for(let i=0;i<1000;i++)marks.setMatrixAt(i,stamp.matrix);scene.add(marks);let markCursor=0,lastMark=0;
 
-  function updateMarks(m, isDX55 = false){
+  function updateMarks(m, cfg){
     m._lastMark = m._lastMark || 0;
     if(m.distance - m._lastMark > 0.28){
       m._lastMark = m.distance;
       const sy = Math.sin(m.yaw), cy = Math.cos(m.yaw);
-      const halfWidth = isDX55 ? 0.714 : 1.025;
-      const rearOffset = isDX55 ? 0.65 : 1.06;
-      const stampScaleX = isDX55 ? 0.23 / 0.39 : 1.0;
+      const halfWidth = cfg?.halfWidthWorld ?? 0.80;
+      const rearOffset = cfg?.rearOffsetWorld ?? 0.85;
+      const stampScaleX = ((cfg?.shoeWidth ?? 0.14) * (cfg?.scale ?? 1.9)) / 0.39;
       for(const side of [-1, 1]){
         const x = m.x + cy * side * halfWidth - sy * rearOffset;
         const z = m.z - sy * side * halfWidth - cy * rearOffset;
@@ -157,7 +156,7 @@ try {
     const activeTarget=(motion.destination&&motion.destination!=='home')?motion.destination:(motion.pending&&motion.pending!=='home')?motion.pending:motion.routeId;
     for(const l of labels){
       projected.copy(l.v).project(camera);const x=(projected.x*.5+.5)*width,y=(-projected.y*.5+.5)*height;
-      const wanted=l.parking||labelsVisible||(panel.choosing&&!!l.id);
+      const wanted=!l.parking&&(l.building||labelsVisible||(panel.choosing&&!!l.id));
       l.el.style.display=(!wanted||projected.z>1||projected.z< -1||x<8||x>width-8||y<8||y>height-8)?'none':'';
       l.el.style.left=x+'px';l.el.style.top=y+'px';l.el.classList.toggle('active',l.id===activeTarget);
     }
@@ -168,8 +167,9 @@ try {
       btn.style.left=((projected.x*.5+.5)*width)+'px';btn.style.top=((-projected.y*.5+.5)*height)+'px';
       btn.hidden=projected.z>1||projected.z< -1||Math.abs(projected.x)>1.1||Math.abs(projected.y)>1.1;
     };
-    updateTarget(targetBobcat,ctl.root.position);
-    updateTarget(targetDX55,dx55.root.position);
+    for(const id of EQUIPMENT_IDS){
+      updateTarget(hitButtons[id],models[id].root.position);
+    }
 
     for(const[id,mesh]of Object.entries(world.surfaceHighlights))mesh.visible=panel.choosing&&id===hoveredSurface;
   }
@@ -206,8 +206,10 @@ try {
     const rect=renderer.domElement.getBoundingClientRect();
     pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);
     ray.setFromCamera(pointer,camera);
-    if(ray.intersectObject(ctl.root,true).length>0)return 'bobcat-t870';
-    if(ray.intersectObject(dx55.root,true).length>0)return 'dx-55';
+    for(const id of EQUIPMENT_IDS){
+      const targetObj=models[id].pickBox||models[id].root;
+      if(ray.intersectObject(targetObj,false).length>0)return id;
+    }
     return null;
   }
   renderer.domElement.addEventListener('pointermove',e=>{
@@ -245,9 +247,9 @@ try {
     $('status-dot').style.background=motion.phase==='parked'?'#9aa297':'#6e9770';
     const lightState=lighting.snapshot();
     $('site-time').textContent=`${lightState.preview?'미리보기 · ':''}${lightState.clock} KST · ${lightState.label}`;
-    const eqName=activeEquipmentId==='dx-55'?'Doosan DX-55':'Bobcat T-870';
-    $('motion-note').textContent=motion.blocked?motion.blocked.name+'과의 간격을 확인해 주세요.':motion.phase==='parked'?'주행을 눌러 시험 노면을 선택하세요.':motion.phase==='parking'?'주차 화살표 방향으로 맞춥니다.':motion.destination?`${motion.destination==='home'||motion.destination==='home_P01'?'P 주차장':SURFACES[motion.destination]?.name||'목적지'}으로 이동합니다.`:motion.routeId?`${eqName} ${SURFACES[motion.routeId]?.name||''} 시험 주행 중입니다.`:'';
-    const activeTarget=(motion.destination&&motion.destination!=='home'&&motion.destination!=='home_P01')?motion.destination:(motion.pending&&motion.pending!=='home'&&motion.pending!=='home_P01')?motion.pending:motion.routeId;
+    const eqName=EQUIPMENTS[activeEquipmentId]?.name||'Bobcat T-870';
+    $('motion-note').textContent=motion.blocked?motion.blocked.name+'과의 간격을 확인해 주세요.':motion.phase==='parked'?'주행을 눌러 시험 노면을 선택하세요.':motion.phase==='parking'?'주차 화살표 방향으로 맞춥니다.':motion.destination?`${isHomeNode(motion.destination)?'P 주차장':SURFACES[motion.destination]?.name||'목적지'}으로 이동합니다.`:motion.routeId?`${eqName} ${SURFACES[motion.routeId]?.name||''} 시험 주행 중입니다.`:'';
+    const activeTarget=(motion.destination&&!isHomeNode(motion.destination))?motion.destination:(motion.pending&&!isHomeNode(motion.pending))?motion.pending:motion.routeId;
     document.querySelectorAll('[data-route]').forEach(el=>{const active=el.dataset.route===activeTarget;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
     $('pause').hidden=motion.phase==='parked'||motion.phase==='parking';
     $('pause').textContent=paused?'주행 재개':'일시 정지';
@@ -284,34 +286,42 @@ try {
     requestAnimationFrame(frame);if(document.hidden)return;
     const dt=previousTime===null?1/60:Math.min(.16,(now-previousTime)/1000);previousTime=now;elapsed+=dt;
 
-    // Both vehicles update physics independently in real-time!
+    // All 7 vehicles update physics independently in real-time with mutual collision avoidance
+    const allMotions = Object.values(motions);
     let remain=dt*playbackRate;
     while(remain>1e-6){
       const step=Math.min(1/90,remain);
-      motionBobcat.update(step);
-      motionDX55.update(step);
-
-      if(motionBobcat.speed>0.05)updateMarks(motionBobcat, false);
-      if(motionDX55.speed>0.05)updateMarks(motionDX55, true);
+      for(const id of EQUIPMENT_IDS){
+        const m=motions[id];
+        m.update(step, allMotions);
+        if(m.speed>0.05)updateMarks(m, EQUIPMENTS[id]);
+      }
       remain-=step;
     }
 
-    const currentM=getActiveMotion();
-    // Effects originate from driving vehicles
-    const drivingM=motionDX55.speed>motionBobcat.speed?motionDX55:motionBobcat;
-    effects.update(dt,drivingM.speed>0.05?drivingM:currentM);
+    // Surface effects (dust, gravel, water, mud) update physics, then emit from ALL moving vehicles
+    effects.updatePhysics(dt);
+    for(const id of EQUIPMENT_IDS){
+      const m=motions[id];
+      if(m.speed>0.04 || Math.abs(m.omega)>0.08){
+        const cfg=EQUIPMENTS[id];
+        effects.emitVehicle(dt, m, id, cfg?.halfWidthWorld ?? 0.85, cfg?.rearOffsetWorld ?? 1.05);
+      }
+    }
     effectView.sync();
 
+    const currentM=getActiveMotion();
     const lightState=lighting.update(dt,currentM);
     const night=lighting.getNight?lighting.getNight():(lightState.night??0);
 
-    // 3D Models update simultaneously with rolling wheels, crawler tracks & night headlights
-    ctl.update(motionBobcat, night);
-    dx55.update(motionDX55, night);
+    // All 7 3D Models update simultaneously with rolling wheels, crawler tracks & MHE/CTL night headlights
+    for(const id of EQUIPMENT_IDS){
+      models[id].update(motions[id], night);
+    }
     updateCamera(dt);renderer.render(scene,camera);
     frameCount++;fpsTime+=dt;if(fpsTime>=1){fps=frameCount/fpsTime;frameCount=0;fpsTime=0;}
     if(elapsed-lastHud>.12){updateHud();lastHud=elapsed;}
-    if(elapsed>.15&&!$('loading').hidden){$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,600);}
+    if(elapsed>.15&&!$('loading').hidden&&allModelsLoaded){$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,400);}
     if(currentM.events.length){for(const e of currentM.events.splice(0))window.dispatchEvent(new CustomEvent('trackvision:field-motion',{detail:{...e,equipment:activeEquipmentId,simulated:true}}));}
   }
   requestAnimationFrame(frame);

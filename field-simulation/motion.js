@@ -1,5 +1,5 @@
 import { checkVehiclePose } from './photo-map.js';
-import { HOME, HOME_YAW, P01_HOME, P01_YAW, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
+import { HOME, HOME_YAW, SLOT_HOME, SLOT_YAW, isHomeNode, SURFACES, LOOPS, Route, planTravel, groundHeight, surfaceAt } from './routes.js';
 
 const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
 const angleDelta = (a,b) => Math.atan2(Math.sin(b-a), Math.cos(b-a));
@@ -56,10 +56,9 @@ export class Spring {
 export class VehicleMotion {
   constructor({ slotId = 'P03' } = {}) {
     this.slotId = slotId;
-    this.homeNode = slotId === 'P01' ? 'home_P01' : 'home';
-    const isP01 = slotId === 'P01';
-    this.homePos = isP01 ? P01_HOME : HOME;
-    this.homeYaw = isP01 ? P01_YAW : HOME_YAW;
+    this.homeNode = slotId === 'P03' ? 'home' : `home_${slotId}`;
+    this.homePos = SLOT_HOME[slotId] || HOME;
+    this.homeYaw = SLOT_YAW[slotId] ?? HOME_YAW;
     this.x = this.homePos[0]; this.z = this.homePos[1]; this.y = groundHeight(this.x, this.z);
     this.yaw = this.homeYaw; this.blocked = null; this.speed = 0; this.acceleration = 0; this.omega = 0;
     this.route = null; this.routeId = null; this.destination = null; this.phase = 'parked'; this.s = 0;
@@ -128,7 +127,7 @@ export class VehicleMotion {
         }
       }
       this.destination=target;this.pending=null;this.travelEdges=edges;this.edgeIndex=0;
-      this.phase=target==='home'?'return':'transfer';
+      this.phase=isHomeNode(target)?'return':'transfer';
       this.events.push({type:'navigate',from,to:target,nodes:plan.nodes,estimatedSeconds:plan.seconds});
       if(!edges.length){this.arrive(target);return;}
       this.activeRoad=edges[0];this.setRoute(this.activeRoad.route);
@@ -137,7 +136,7 @@ export class VehicleMotion {
     if(this.activeRoad) {
       if(this.destination===target){this.pending=null;return;}
       const u=this.activeRoad.from, v=this.activeRoad.to, r=this.activeRoad.route;
-      const planV=planTravel(v,target);
+      const planV=planTravel(v,target,this.slotId);
       const remFwd=this.s<r.length-.08?sliceRoute(r,this.s,r.length,`${u}-${v}-rem`):null;
       const remainingExits=[];
       if(u==='F'&&v==='F')for(const road of this.travelEdges.slice(this.edgeIndex+1)){
@@ -146,7 +145,7 @@ export class VehicleMotion {
       }
       const edges=[...(remFwd?[{from:u,to:v,route:remFwd,speed:this.activeRoad.speed,seconds:remFwd.length/this.activeRoad.speed}]:[]),...remainingExits,...planV.edges];
       this.destination=target;this.pending=null;this.travelEdges=edges;this.edgeIndex=0;
-      this.phase=target==='home'?'return':'transfer';
+      this.phase=isHomeNode(target)?'return':'transfer';
       this.events.push({type:'navigate',from:v,to:target,nodes:planV.nodes,estimatedSeconds:planV.seconds});
       if(!edges.length){this.arrive(target);return;}
       this.activeRoad=edges[0];this.setRoute(this.activeRoad.route);
@@ -161,15 +160,14 @@ export class VehicleMotion {
   beginTravel(from,to) {
     const plan=planTravel(from,to,this.slotId);
     this.destination=to;this.pending=null;this.travelEdges=plan.edges;this.edgeIndex=0;
-    const isHome=n=>n==='home'||n==='home_P01'||n===this.homeNode;
-    this.phase=isHome(to)?'return':isHome(from)?'entry':'transfer';
+    this.phase=isHomeNode(to)?'return':isHomeNode(from)?'entry':'transfer';
     this.events.push({type:'navigate',from,to,nodes:plan.nodes,estimatedSeconds:plan.seconds});
     if(!plan.edges.length){this.arrive(to);return;}
     this.activeRoad=plan.edges[0];this.setRoute(this.activeRoad.route);
   }
   arrive(node) {
     this.activeRoad=null;this.travelEdges=[];this.edgeIndex=0;this.destination=null;
-    if(node==='home'||node===this.homeNode||node==='home_P01') {
+    if(isHomeNode(node)) {
       this.phase='parking';this.route=null;this.routeId=null;this.s=0;this.turning=true;
       this.x=this.homePos[0];this.z=this.homePos[1];this.speed=0;this.acceleration=0;this.omega=0;
       return;
@@ -193,7 +191,7 @@ export class VehicleMotion {
       else{this.patternDirection=1;this.setRoute(LOOPS[this.routeId]);}
     }
   }
-  update(dt) {
+  update(dt, otherVehicles = null) {
     dt=clamp(dt,0,.04);this.time+=dt;
     const before={x:this.x,z:this.z,yaw:this.yaw,s:this.s,phase:this.phase,route:this.route,laps:this.laps,routeId:this.routeId,pending:this.pending,destination:this.destination,travelEdges:this.travelEdges,edgeIndex:this.edgeIndex,activeRoad:this.activeRoad,turning:this.turning,patternDirection:this.patternDirection,events:this.events.length};
     let desired=0, turnTarget=this.yaw;
@@ -218,6 +216,47 @@ export class VehicleMotion {
       // Smooth deceleration during turns while maintaining continuous forward motion
       if(headingError>.18) desired*=Math.max(0.38, 1-(headingError-.18)*0.45);
       if(this.paused||this.turning)desired=0;
+    }
+
+    // Vehicle-to-Vehicle Collision Avoidance & Follow Distance Control:
+    if (otherVehicles && Array.isArray(otherVehicles) && (this.phase === 'loop' || this.phase === 'zigzag' || this.phase === 'entry' || this.phase === 'transfer' || this.phase === 'return')) {
+      const myYaw = this.yaw;
+      const cosYaw = Math.cos(myYaw), sinYaw = Math.sin(myYaw);
+
+      for (const other of otherVehicles) {
+        if (!other || other === this) continue;
+        const dx = other.x - this.x;
+        const dz = other.z - this.z;
+        const distSq = dx * dx + dz * dz;
+
+        // Only evaluate vehicles within 12 meters
+        if (distSq > 144) continue;
+
+        const forwardDist = sinYaw * dx + cosYaw * dz;
+        const lateralDist = Math.abs(cosYaw * dx - sinYaw * dz);
+
+        // Case 1: Following another vehicle ahead in the same lane (follow-distance)
+        if (forwardDist > 0.4 && forwardDist < 6.8 && lateralDist < 2.3) {
+          if (forwardDist < 3.2) {
+            // Urgent buffer: stop completely until lead vehicle moves ahead
+            desired = 0;
+          } else {
+            // Adaptive cruise control: match or slow down behind lead vehicle
+            const ratio = (forwardDist - 3.2) / 3.6;
+            desired = Math.min(desired, Math.max(0, other.speed * ratio * 0.9));
+          }
+        }
+
+        // Case 2: Crossing paths or head-on collision avoidance (Yield right of way)
+        // If vehicles are converging or intersecting within 3.8m:
+        if (distSq < 14.5 && lateralDist < 2.5 && forwardDist > -1.2 && forwardDist < 4.0) {
+          // If the other vehicle has a lower slot index or priority, yield and pause
+          const isOtherHigherPriority = (other.slotId || '') < (this.slotId || '');
+          if (isOtherHigherPriority || other.speed > this.speed) {
+            desired = 0;
+          }
+        }
+      }
     }
     const oldSpeed=this.speed;
     const targetA=clamp((desired-this.speed)*2.4,-1.25,.85);

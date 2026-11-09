@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { initialEquipment, applyEquipmentPatch } from '../equipment-schema.js';
-import { createEquipmentStore } from '../../equipment-store.mjs';
+import { createEquipmentStore } from '../equipment-store.mjs';
 
 const store = createEquipmentStore(resolve('data/equipment.json'));
 const list = await store.list();
 console.log('Equipment list:', list.map(e => ({ id: e.id, name: e.name, slot: e.parkingSlotId })));
 
-assert.equal(list.length, 2, 'Should have 2 equipments registered');
+assert.equal(list.length, 7, 'Should have 7 equipments registered');
 const bobcat = await store.get('bobcat-t870');
 assert.equal(bobcat.id, 'bobcat-t870');
 assert.equal(bobcat.parkingSlotId, 'P03');

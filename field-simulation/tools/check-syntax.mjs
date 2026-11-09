@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const files = [
   'server.mjs',
-  'equipment-store.mjs',
+  'field-simulation/equipment-store.mjs',
   'field-simulation/parking-config.js',
   'field-simulation/equipment-schema.js',
   'field-simulation/equipment-panel.js',

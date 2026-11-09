@@ -8,6 +8,14 @@ export function createWorld(scene){
   const floor=new T.Mesh(new T.PlaneGeometry(600,600),new T.ShadowMaterial({opacity:.27}));
   floor.rotation.x=-Math.PI/2;floor.position.y=.012;floor.receiveShadow=true;scene.add(floor);
   const paint=[];
+  const padPositions=[];
+  const stopperPositions=[];
+  const ctlAccentPositions=[];
+  const mheAccentPositions=[];
+  function quad(arr,p0,p1,p2,p3,y=.026){
+    const c=[[p0[0],y,p0[1]],[p1[0],y,p1[1]],[p2[0],y,p2[1]],[p3[0],y,p3[1]]];
+    for(const i of [0,1,2,0,2,3])arr.push(...c[i]);
+  }
   function strip(a,b){
     const dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),ox=-dz/length*PARKING_BAY.paintWidth/2,oz=dx/length*PARKING_BAY.paintWidth/2;
     const corners=[[a[0]+ox,.032,a[1]+oz],[a[0]-ox,.032,a[1]-oz],[b[0]-ox,.032,b[1]-oz],[b[0]+ox,.032,b[1]+oz]];
@@ -16,12 +24,30 @@ export function createWorld(scene){
   for(const slot of PARKING_SLOTS){
     const[x,z]=photoToWorld(slot.p),front=photoToWorld([slot.p[0]+slot.direction[0],slot.p[1]+slot.direction[1]]),yaw=Math.atan2(front[0]-x,front[1]-z),cs=Math.cos(yaw),sn=Math.sin(yaw);
     const at=(side,fore)=>[x+cs*side+sn*fore,z-sn*side+cs*fore];
-    const a=at(-PARKING_BAY.width/2,PARKING_BAY.front),b=at(-PARKING_BAY.width/2,PARKING_BAY.rear),c=at(PARKING_BAY.width/2,PARKING_BAY.rear),d=at(PARKING_BAY.width/2,PARKING_BAY.front);
+    const hw=PARKING_BAY.width/2,r=PARKING_BAY.rear,f=PARKING_BAY.front;
+    const a=at(-hw,f),b=at(-hw,r),c=at(hw,r),d=at(hw,f);
     strip(a,b);strip(b,c);strip(c,d);
+    // Subtle dark bay surface pad
+    quad(padPositions,at(-hw+.08,f-.05),at(-hw+.08,r+.08),at(hw-.08,r+.08),at(hw-.08,f-.05),.022);
+    // Safety wheel stopper bar near the rear of the bay
+    quad(stopperPositions,at(-hw*.58,r+.42),at(-hw*.58,r+.26),at(hw*.58,r+.26),at(hw*.58,r+.42),.036);
+    // Zone color header accent along the rear edge (CTL vs MHE)
+    const accentTarget=slot.zone==='MHE'?mheAccentPositions:ctlAccentPositions;
+    quad(accentTarget,at(-hw+.06,r-.04),at(-hw+.06,r-.20),at(hw-.06,r-.20),at(hw-.06,r-.04),.034);
   }
   const paintGeometry=new T.BufferGeometry();paintGeometry.setAttribute('position',new T.Float32BufferAttribute(paint,3));paintGeometry.computeVertexNormals();
-  const parkingBays=new T.Mesh(paintGeometry,new T.MeshStandardMaterial({color:'#e3dfd0',transparent:true,opacity:.72,depthWrite:false,roughness:1,side:T.DoubleSide}));
+  const parkingBays=new T.Mesh(paintGeometry,new T.MeshStandardMaterial({color:'#f4f3eb',transparent:true,opacity:.86,depthWrite:false,roughness:.9,side:T.DoubleSide}));
   parkingBays.name='parking-bays';parkingBays.receiveShadow=true;parkingBays.renderOrder=1;scene.add(parkingBays);
+
+  const makeLayer=(positions,color,opacity)=>{
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.computeVertexNormals();
+    const m=new T.Mesh(g,new T.MeshStandardMaterial({color,transparent:true,opacity,depthWrite:false,roughness:.95,side:T.DoubleSide}));
+    m.receiveShadow=true;m.renderOrder=1;scene.add(m);return m;
+  };
+  makeLayer(padPositions,'#28302c',.22);
+  makeLayer(stopperPositions,'#e0a32e',.82);
+  makeLayer(ctlAccentPositions,'#3b6e52',.78);
+  makeLayer(mheAccentPositions,'#d96b27',.82);
   const surfaceHighlights={};
   for(const[id,polygon]of Object.entries(SURFACE_POLYGONS)){
     const points=polygon.map(p=>{const[x,z]=photoToWorld(p);return new T.Vector2(x,-z);});

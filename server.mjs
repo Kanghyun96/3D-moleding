@@ -1,8 +1,9 @@
 import { createServer } from 'node:http';
+import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createEquipmentStore } from './equipment-store.mjs';
+import { createEquipmentStore } from './field-simulation/equipment-store.mjs';
 
 const mime = {
   '.html': 'text/html; charset=utf-8',
@@ -48,20 +49,46 @@ return createServer(async (request, response) => {
   }catch(error){json(response,error.status||500,{error:error.status?error.message:'시험 정보를 저장하거나 불러오지 못했습니다. 서버와 저장 파일을 확인해 주세요.'});return;}
   if(!['GET','HEAD'].includes(request.method)){response.writeHead(405).end();return;}
   if(pathname.split('/').some(part=>part.startsWith('.')||part==='data')||['/equipment-store.mjs','/server.mjs'].includes(pathname)){response.writeHead(403).end('Forbidden');return;}
-  let file = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
+  let file = resolve(root, `.${pathname === '/' ? '/pages/index.html' : pathname}`);
   if (file !== root && !file.startsWith(root + sep)) {
     response.writeHead(403).end('Forbidden');
     return;
   }
   try {
-    if ((await stat(file)).isDirectory())file=resolve(file,'index.html');
-    const content=await readFile(file);
+    let target = file;
+    let fileStat;
+    try {
+      fileStat = await stat(target);
+      if (fileStat.isDirectory()) {
+        target = resolve(target, 'index.html');
+        fileStat = await stat(target);
+      }
+    } catch {
+      const inPages = resolve(root, 'pages', `.${pathname}`);
+      if (inPages.startsWith(root + sep)) {
+        fileStat = await stat(inPages);
+        target = inPages;
+      } else {
+        throw new Error('Not found');
+      }
+    }
+    const ext = extname(target).toLowerCase();
+    const isGlb = ext === '.glb';
     response.writeHead(200, {
-      'Content-Type': mime[extname(file).toLowerCase()] || 'application/octet-stream',
-      'Content-Length': content.length,
-      'Cache-Control': 'no-store'
+      'Content-Type': mime[ext] || 'application/octet-stream',
+      'Content-Length': fileStat.size,
+      'Cache-Control': isGlb ? 'public, max-age=3600' : 'no-store'
     });
-    response.end(request.method==='HEAD'?undefined:content);
+    if (request.method === 'HEAD') {
+      response.end();
+      return;
+    }
+    if (isGlb) {
+      createReadStream(target).pipe(response);
+      return;
+    }
+    const content = await readFile(target);
+    response.end(content);
   } catch {
     response.writeHead(404).end('Not found');
   }
